@@ -1,0 +1,17 @@
+{
+  "name": "vitavet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
