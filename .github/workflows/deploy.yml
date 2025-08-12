@@ -1,0 +1,57 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: |
+          pnpm --filter api test
+          pnpm --filter web test:run
+
+      - name: Build applications
+        run: |
+          pnpm --filter api build
+          pnpm --filter web build
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Preview deployment for PRs
+            railway up --service api --detach
+            railway up --service web --detach
+          else
+            # Production deployment for main branch
+            railway up --service api
+            railway up --service web
+          fi

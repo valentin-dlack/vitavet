@@ -1,0 +1,11 @@
+Summary,Issue Type,Description,Labels,Epic Link
+"US-05b – Add consultation note","Story","As a vet I want to add consultation note so that record is kept
+AC: PATCH notes, visible in history","MVP","PROFILE"
+"US-07b – Send reminder","Story","As system I want to send mail + push so that 95% delivered
+AC: delivery logs OK","MVP","NOTIF"
+"US-08a – Create user clinic","Story","As an admin I want to create ASV user so that access is given
+AC: POST /users role=ASV","MVP","ADMIN"
+"US-03d – Cancel appointment","Story","As a pet owner I want to cancel my appointment so that the slot is freed
+AC: PATCH status=Cancelled","POST_MVP","RDV"
+"US-02b – Filter by specialty","Story","As a pet owner I want to filter clinics by specialty so that I choose the right clinic
+AC: multi-select filter","POST_MVP","SEARCH"
