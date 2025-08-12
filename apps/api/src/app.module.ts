@@ -3,7 +3,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthModule } from './health/health.module';
-
 @Module({
   imports: [
     ThrottlerModule.forRoot([

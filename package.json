@@ -4,14 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\""
+    "test": "pnpm --filter api test && pnpm --filter web test:run",
+    "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\"",
+    "build": "pnpm --filter api build && pnpm --filter web build",
+    "lint": "pnpm --filter api lint && pnpm --filter web lint",
+    "format": "pnpm --filter api format && pnpm --filter web format",
+    "prepare": "husky",
+    "commit-msg": "husky"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
-    "concurrently": "^9.2.0"
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "concurrently": "^9.2.0",
+    "husky": "^9.1.7"
   }
 }

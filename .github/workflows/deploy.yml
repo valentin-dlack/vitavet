@@ -2,9 +2,9 @@ name: Deploy to Railway
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
