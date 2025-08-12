@@ -1,0 +1,11 @@
+Summary,Issue Type,Description,Labels,Epic Link
+"US-03b – Select vet","Story","As a pet owner I want to select veterinarian so that I see availability
+AC: dropdown updates slots","MVP","RDV"
+"US-03c – Confirm appointment","Story","As a pet owner I want to confirm appointment so that I receive proof
+AC: POST /appointments, mail sent","MVP","RDV"
+"US-06a – List pending RDV","Story","As ASV I want pending list so that I validate fast
+AC: GET /appointments?status=pending","MVP","RDV_ADMIN"
+"US-06b – Confirm RDV (ASV)","Story","As ASV I want to confirm RDV so that agenda accurate
+AC: PATCH status=Confirmed + mail","MVP","RDV_ADMIN"
+"US-04a – Agenda day view","Story","As a vet I want day view so that I see consultations
+AC: list 30min cells, websocket updates","MVP","AGENDA"

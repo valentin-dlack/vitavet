@@ -1,0 +1,9 @@
+Summary,Issue Type,Description,Labels,Epic Link
+"US-08b – Update role","Story","As an admin I want to modify role so that rights are updated
+AC: PATCH role","POST_MVP","ADMIN"
+"US-08c – Deactivate user","Story","As an admin I want to deactivate account so that security is improved
+AC: status=Inactive","POST_MVP","ADMIN"
+"US-05c – Upload document","Story","As a vet I want to upload document so that dossier is complete
+AC: upload 5MB, link visible for client","POST_MVP","PROFILE"
+"US-13 – Export/Delete RGPD","Story","As an admin I want to export or delete user data so that GDPR rights are respected
+AC: /gdpr/export-delete","POST_MVP","GDPR"
