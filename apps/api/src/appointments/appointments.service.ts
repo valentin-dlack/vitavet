@@ -98,18 +98,24 @@ export class AppointmentsService {
 
     const [vets, animals] = await Promise.all([
       this.userRepository.find({ where: vetIds.map((id) => ({ id })) as any }),
-      this.animalRepository.find({ where: animalIds.map((id) => ({ id })) as any }),
+      this.animalRepository.find({
+        where: animalIds.map((id) => ({ id })) as any,
+      }),
     ]);
 
     const ownerIds = Array.from(new Set(animals.map((an) => an.ownerId)));
     const owners = ownerIds.length
-      ? await this.userRepository.find({ where: ownerIds.map((id) => ({ id })) as any })
+      ? await this.userRepository.find({
+          where: ownerIds.map((id) => ({ id })) as any,
+        })
       : [];
 
     return appointments.map((apt) => {
       const animal = animals.find((a) => a.id === apt.animalId);
       const vet = vets.find((u) => u.id === apt.vetUserId);
-      const owner = animal ? owners.find((u) => u.id === animal.ownerId) : undefined;
+      const owner = animal
+        ? owners.find((u) => u.id === animal.ownerId)
+        : undefined;
       return {
         id: apt.id,
         clinicId: apt.clinicId,
@@ -121,13 +127,27 @@ export class AppointmentsService {
         endsAt: apt.endsAt.toISOString(),
         createdAt: apt.createdAt.toISOString(),
         vet: vet
-          ? { id: vet.id, firstName: vet.firstName, lastName: vet.lastName, email: vet.email }
+          ? {
+              id: vet.id,
+              firstName: vet.firstName,
+              lastName: vet.lastName,
+              email: vet.email,
+            }
           : undefined,
         animal: animal
-          ? { id: animal.id, name: animal.name, birthdate: animal.birthdate ?? null }
+          ? {
+              id: animal.id,
+              name: animal.name,
+              birthdate: animal.birthdate ?? null,
+            }
           : undefined,
         owner: owner
-          ? { id: owner.id, firstName: owner.firstName, lastName: owner.lastName, email: owner.email }
+          ? {
+              id: owner.id,
+              firstName: owner.firstName,
+              lastName: owner.lastName,
+              email: owner.email,
+            }
           : undefined,
       };
     });

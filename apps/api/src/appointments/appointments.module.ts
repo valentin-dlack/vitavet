@@ -8,7 +8,9 @@ import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, AppointmentType, User, Animal])],
+  imports: [
+    TypeOrmModule.forFeature([Appointment, AppointmentType, User, Animal]),
+  ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
   exports: [AppointmentsService],
