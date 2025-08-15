@@ -1,0 +1,85 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - '5432:5432'
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vitavet
+        options: >-
+          --health-cmd="pg_isready -U postgres" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for Postgres to be ready
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && break
+            echo "Postgres is unavailable - sleeping" && sleep 1
+          done
+
+      - name: Run API tests
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: vitavet
+        run: pnpm --filter api test -- --runInBand
+
+      - name: Run Web tests
+        run: pnpm --filter web test:run
+
+      - name: Run API e2e tests
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: vitavet
+        run: pnpm --filter api test:e2e -- --runInBand
+
+      - name: Lint API
+        run: pnpm --filter api lint
+
+      - name: Lint Web
+        run: pnpm --filter web lint
+
+      - name: Build API
+        run: pnpm --filter api build
+
+      - name: Build Web
+        run: pnpm --filter web build
