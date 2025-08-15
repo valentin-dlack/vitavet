@@ -19,7 +19,7 @@ describe('ClinicSearch', () => {
   });
 
   it('searches clinics and shows results', async () => {
-    (clinicsService.search as unknown as vi.Mock).mockResolvedValueOnce([
+    (clinicsService.search as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       { id: '1', name: 'Clinique A', city: 'Paris', postcode: '75001' },
     ]);
 
