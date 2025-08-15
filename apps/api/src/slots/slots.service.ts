@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TimeSlot } from './entities/time-slot.entity';
 import { GetSlotsDto } from './dto/get-slots.dto';
 
@@ -19,7 +19,7 @@ export class SlotsService {
     private readonly timeSlotRepository: Repository<TimeSlot>,
   ) {}
 
-  async getAvailableSlots(query: GetSlotsDto): Promise<AvailableSlot[]> {
+  getAvailableSlots(query: GetSlotsDto): AvailableSlot[] {
     const { clinicId, date, vetUserId } = query;
 
     // Parse the date and create start/end of day

@@ -23,5 +23,3 @@ export class ReminderInstance {
   @Column('jsonb', { default: {} })
   payload!: Record<string, unknown>;
 }
-
-

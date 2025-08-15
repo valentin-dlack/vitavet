@@ -46,20 +46,20 @@ describe('SlotsController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should return available slots', async () => {
+  it('should return available slots', () => {
     const query: GetSlotsDto = {
       clinicId: '550e8400-e29b-41d4-a716-446655440000',
       date: '2024-01-15',
     };
 
-    const result = await controller.getAvailableSlots(query);
+    const result = controller.getAvailableSlots(query);
 
     expect(service.getAvailableSlots).toHaveBeenCalledWith(query);
     expect(result).toEqual(mockSlots);
   });
 
-  it('should seed demo slots', async () => {
-    const result = await controller.seedDemoSlots();
+  it('should seed demo slots', () => {
+    const result = controller.seedDemoSlots();
 
     expect(service.seedDemoSlots).toHaveBeenCalled();
     expect(result).toEqual({ message: 'Demo slots seeded successfully' });

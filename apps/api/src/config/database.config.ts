@@ -11,5 +11,8 @@ export const databaseConfig: TypeOrmModuleOptions = {
   entities: [User],
   synchronize: process.env.NODE_ENV !== 'production', // Auto-create tables in development
   logging: process.env.NODE_ENV !== 'production',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 };

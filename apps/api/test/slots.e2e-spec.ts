@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AvailableSlot } from 'src/slots/slots.service';
 
 describe('SlotsController (e2e)', () => {
   let app: INestApplication;
@@ -31,7 +32,7 @@ describe('SlotsController (e2e)', () => {
       .expect((res) => {
         expect(Array.isArray(res.body)).toBe(true);
         expect(res.body.length).toBeGreaterThan(0);
-        
+
         const firstSlot = res.body[0];
         expect(firstSlot).toHaveProperty('id');
         expect(firstSlot).toHaveProperty('startsAt');
@@ -52,8 +53,7 @@ describe('SlotsController (e2e)', () => {
       .expect(200)
       .expect((res) => {
         expect(Array.isArray(res.body)).toBe(true);
-        
-        res.body.forEach((slot: any) => {
+        (res.body as AvailableSlot[]).forEach((slot) => {
           expect(slot.vetUserId).toBe('550e8400-e29b-41d4-a716-446655440001');
         });
       });
@@ -64,7 +64,10 @@ describe('SlotsController (e2e)', () => {
       .post('/api/slots/seed')
       .expect(201)
       .expect((res) => {
-        expect(res.body).toHaveProperty('message', 'Demo slots seeded successfully');
+        expect(res.body).toHaveProperty(
+          'message',
+          'Demo slots seeded successfully',
+        );
       });
   });
 });

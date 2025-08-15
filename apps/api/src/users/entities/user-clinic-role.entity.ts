@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('user_clinic_role')
 export class UserClinicRole {
@@ -11,5 +11,3 @@ export class UserClinicRole {
   @PrimaryColumn('text')
   role!: 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC';
 }
-
-

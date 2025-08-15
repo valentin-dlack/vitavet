@@ -7,5 +7,3 @@ export class SearchClinicsDto {
   @Matches(/^[0-9A-Za-z\-\s]+$/)
   postcode?: string;
 }
-
-

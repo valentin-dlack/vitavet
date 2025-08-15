@@ -9,7 +9,7 @@ function createUserRepositoryMock() {
   const users: User[] = [] as unknown as User[];
   return {
     // findOne supports where: { email } or { id }
-    findOne: jest.fn(async ({ where }: { where: Partial<User> }) => {
+    findOne: jest.fn(({ where }: { where: Partial<User> }) => {
       if (where.email) {
         return users.find((u) => u.email === where.email) ?? null;
       }
@@ -19,12 +19,16 @@ function createUserRepositoryMock() {
       return null;
     }),
     create: jest.fn((data: Partial<User>) => data as User),
-    save: jest.fn(async (data: Partial<User>) => {
+    save: jest.fn((data: Partial<User>) => {
       // if existing, update
       const existingIndex = users.findIndex((u) => u.id === (data as User).id);
       const now = new Date();
       if (existingIndex >= 0) {
-        const updated = { ...users[existingIndex], ...data, updatedAt: now } as User;
+        const updated = {
+          ...users[existingIndex],
+          ...data,
+          updatedAt: now,
+        } as User;
         users[existingIndex] = updated;
         return updated;
       }
@@ -41,7 +45,7 @@ function createUserRepositoryMock() {
       users.push(created);
       return created;
     }),
-    find: jest.fn(async () => users),
+    find: jest.fn(() => users),
     // helper to reset between tests
     __reset: () => {
       users.splice(0, users.length);

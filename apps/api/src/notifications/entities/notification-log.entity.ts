@@ -1,4 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('notification_log')
 export class NotificationLog {
@@ -20,5 +25,3 @@ export class NotificationLog {
   @Column('timestamptz', { name: 'opened_at', nullable: true })
   openedAt?: Date | null;
 }
-
-

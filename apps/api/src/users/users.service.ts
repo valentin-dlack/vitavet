@@ -22,7 +22,9 @@ export class UsersService {
     lastName: string,
   ): Promise<User> {
     // Check if user already exists
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -55,7 +57,10 @@ export class UsersService {
     return bcrypt.compare(password, user.password);
   }
 
-  async updateEmailVerification(userId: string, isVerified: boolean): Promise<User> {
+  async updateEmailVerification(
+    userId: string,
+    isVerified: boolean,
+  ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');

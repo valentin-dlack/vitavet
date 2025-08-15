@@ -33,17 +33,17 @@ describe('SlotsService', () => {
     expect(repo).toBeDefined();
   });
 
-  it('should return available slots for a clinic and date', async () => {
+  it('should return available slots for a clinic and date', () => {
     const query: GetSlotsDto = {
       clinicId: '550e8400-e29b-41d4-a716-446655440000',
       date: '2024-01-15',
     };
 
-    const result = await service.getAvailableSlots(query);
+    const result = service.getAvailableSlots(query);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
-    
+
     // Check slot structure
     const firstSlot = result[0];
     expect(firstSlot).toHaveProperty('id');
@@ -53,30 +53,30 @@ describe('SlotsService', () => {
     expect(firstSlot.durationMinutes).toBe(30);
   });
 
-  it('should filter slots by vet when vetUserId is provided', async () => {
+  it('should filter slots by vet when vetUserId is provided', () => {
     const query: GetSlotsDto = {
       clinicId: '550e8400-e29b-41d4-a716-446655440000',
       date: '2024-01-15',
       vetUserId: '550e8400-e29b-41d4-a716-446655440001',
     };
 
-    const result = await service.getAvailableSlots(query);
+    const result = service.getAvailableSlots(query);
 
     expect(Array.isArray(result)).toBe(true);
-    
+
     // All slots should have the same vetUserId
-    result.forEach(slot => {
+    result.forEach((slot) => {
       expect(slot.vetUserId).toBe('550e8400-e29b-41d4-a716-446655440001');
     });
   });
 
-  it('should return slots sorted by start time', async () => {
+  it('should return slots sorted by start time', () => {
     const query: GetSlotsDto = {
       clinicId: '550e8400-e29b-41d4-a716-446655440000',
       date: '2024-01-15',
     };
 
-    const result = await service.getAvailableSlots(query);
+    const result = service.getAvailableSlots(query);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(1);

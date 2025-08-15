@@ -20,5 +20,3 @@ export class AgendaBlock {
   @Column('text', { nullable: true })
   reason?: string | null;
 }
-
-

@@ -11,5 +11,3 @@ export class AppointmentType {
   @Column('int', { default: 30, name: 'duration_min' })
   durationMin!: number;
 }
-
-

@@ -20,4 +20,3 @@ export class ReminderRule {
   @Column('boolean', { default: true })
   active!: boolean;
 }
-

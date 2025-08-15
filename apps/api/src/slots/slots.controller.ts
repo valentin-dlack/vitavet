@@ -7,9 +7,7 @@ export class SlotsController {
   constructor(private readonly slotsService: SlotsService) {}
 
   @Get()
-  async getAvailableSlots(
-    @Query() query: GetSlotsDto,
-  ): Promise<AvailableSlot[]> {
+  getAvailableSlots(@Query() query: GetSlotsDto): AvailableSlot[] {
     return this.slotsService.getAvailableSlots(query);
   }
 

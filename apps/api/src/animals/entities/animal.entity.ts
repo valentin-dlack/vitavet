@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('animals')
 export class Animal {
@@ -23,5 +29,3 @@ export class Animal {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
-
-

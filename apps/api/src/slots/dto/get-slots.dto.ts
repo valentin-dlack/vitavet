@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString, IsUUID } from 'class-validator';
+import { IsOptional, IsDateString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class GetSlotsDto {
