@@ -9,3 +9,10 @@ AC: 3 past visits listed","MVP","PROFILE"
 AC: Lighthouse a11y ≥85, ARIA labels, focus order","MVP","ACCESS"
 "US-07a – Schedule reminder","Story","As system I want schedule reminder J-7 so that client warned
 AC: cron job saved","MVP","NOTIF"
+"US-08d – RBAC roles & guards (base)","Story","As a system I want role-based access control so that features are protected
+AC: Roles: WEBMASTER, MANAGER_CLINIC, VET, ASV, OWNER
+AC: JWT payload includes roles[] and optional clinicIds[]
+AC: Guard enforces required roles per route; 403 if forbidden","MVP","AUTH"
+"US-09 – Protect routes (frontend)","Story","As a user I want protected pages so that only authorized users can access
+AC: Route guards in SPA (React Router) based on auth + roles
+AC: Redirect to /login if not authenticated; 403 page if role missing","MVP","AUTH"

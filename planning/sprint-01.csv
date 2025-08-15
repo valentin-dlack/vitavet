@@ -5,5 +5,3 @@ AC: form validation, bcrypt, confirmation mail","MVP","AUTH"
 AC: JWT issued, redirect dashboard","MVP","AUTH"
 "US-02a – Search clinic postcode","Story","As a pet owner I want to search by postcode so that I find nearest clinic
 AC: JSON list <1s","MVP","SEARCH"
-"US-03a – Choose date/hour","Story","As a pet owner I want to pick date and slot so that I plan my visit
-AC: calendar loads available slots","MVP","RDV"

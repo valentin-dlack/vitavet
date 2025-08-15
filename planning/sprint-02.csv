@@ -9,3 +9,8 @@ AC: GET /appointments?status=pending","MVP","RDV_ADMIN"
 AC: PATCH status=Confirmed + mail","MVP","RDV_ADMIN"
 "US-04a – Agenda day view","Story","As a vet I want day view so that I see consultations
 AC: list 30min cells, websocket updates","MVP","AGENDA"
+"US-03a – Choose date/hour","Story","As a pet owner I want to pick date and slot so that I plan my visit
+AC: calendar loads available slots","MVP","RDV"
+"US-03a1 – List available slots","Story","As a pet owner I want a list of available slots so that I can pick a time
+AC: GET /api/slots?clinicId&date&vetId? returns 15/30min slots
+AC: Mocked computation first (no overlaps), <300ms on demo data","MVP","RDV"

@@ -7,3 +7,16 @@ AC: status=Inactive","POST_MVP","ADMIN"
 AC: upload 5MB, link visible for client","POST_MVP","PROFILE"
 "US-13 – Export/Delete RGPD","Story","As an admin I want to export or delete user data so that GDPR rights are respected
 AC: /gdpr/export-delete","POST_MVP","GDPR"
+"US-05d – View my profile","Story","As an authenticated user I want to view my profile so that I can verify my information
+AC: GET /api/me returns {id,email,firstName,lastName,roles[],clinics[]}
+AC: Web page /profile shows read-only info (a11y labels)
+AC: Protected route (redirect /login if unauthenticated)","MVP","PROFILE"
+"US-10 – Minimal API docs","Story","As a developer I want API docs so that I can integrate quickly
+AC: Swagger (Nest) enabled on /api/docs
+AC: Endpoints for auth/clinics documented","MVP","DX"
+"US-14 – Security baseline","Story","As a security-conscious team I want baseline hardening so that common risks are mitigated
+AC: Helmet enabled, Throttler configured (global), DTO validation enforced
+AC: CORS restricted (env-based), headers verified in E2E","MVP","SECURITY"
+"US-01c – Reset password","Story","As a user I want to reset my password so that I can regain access
+AC: POST /api/auth/forgot (dev: logs token), POST /api/auth/reset (token+newPassword)
+AC: Minimal front: 2 forms; no real email in MVP (console/log only)","MVP","AUTH"
