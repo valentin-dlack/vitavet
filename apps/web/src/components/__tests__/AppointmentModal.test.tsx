@@ -5,7 +5,7 @@ import { appointmentsService } from '../../services/appointments.service';
 
 // Mock the appointments service
 vi.mock('../../services/appointments.service');
-const mockAppointmentsService = appointmentsService as any;
+const mockAppointmentsService = vi.mocked(appointmentsService);
 
 describe('AppointmentModal', () => {
 	const mockSlot = {
