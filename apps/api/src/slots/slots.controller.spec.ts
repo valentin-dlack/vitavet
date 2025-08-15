@@ -31,7 +31,7 @@ describe('SlotsController', () => {
         {
           provide: SlotsService,
           useValue: {
-            getAvailableSlots: jest.fn(() => Promise.resolve(mockSlots)),
+            getAvailableSlots: jest.fn(() => mockSlots),
             seedDemoSlots: jest.fn(() => Promise.resolve()),
           },
         },
@@ -58,8 +58,8 @@ describe('SlotsController', () => {
     expect(result).toEqual(mockSlots);
   });
 
-  it('should seed demo slots', () => {
-    const result = controller.seedDemoSlots();
+  it('should seed demo slots', async () => {
+    const result = await controller.seedDemoSlots();
 
     expect(service.seedDemoSlots).toHaveBeenCalled();
     expect(result).toEqual({ message: 'Demo slots seeded successfully' });
