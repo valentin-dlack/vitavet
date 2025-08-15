@@ -37,8 +37,15 @@ export class AuthService {
     const token = this.generateToken(user);
 
     // Return user data without password
-    const userWithoutPassword = { ...user };
-    delete userWithoutPassword.password;
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
 
     return {
       user: userWithoutPassword,
@@ -70,8 +77,15 @@ export class AuthService {
     const token = this.generateToken(user);
 
     // Return user data without password
-    const userWithoutPassword = { ...user };
-    delete (userWithoutPassword as any).password;
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
 
     return {
       user: userWithoutPassword,

@@ -3,12 +3,17 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   async create(
     email: string,
@@ -17,7 +22,7 @@ export class UsersService {
     lastName: string,
   ): Promise<User> {
     // Check if user already exists
-    const existingUser = this.users.find((user) => user.email === email);
+    const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -27,57 +32,53 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user
-    const user = new User({
-      id: this.generateId(),
+    const user = this.userRepository.create({
       email,
       password: hashedPassword,
       firstName,
       lastName,
       isEmailVerified: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
 
-    this.users.push(user);
-    return user;
+    return this.userRepository.save(user);
   }
 
   findByEmail(email: string): Promise<User | null> {
-    return Promise.resolve(
-      this.users.find((user) => user.email === email) || null,
-    );
+    return this.userRepository.findOne({ where: { email } });
   }
 
   findById(id: string): Promise<User | null> {
-    return Promise.resolve(this.users.find((user) => user.id === id) || null);
+    return this.userRepository.findOne({ where: { id } });
   }
 
   async validatePassword(user: User, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
 
-  updateEmailVerification(userId: string, isVerified: boolean): Promise<User> {
-    const user = this.users.find((u) => u.id === userId);
+  async updateEmailVerification(userId: string, isVerified: boolean): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     user.isEmailVerified = isVerified;
-    user.updatedAt = new Date();
-    return Promise.resolve(user);
-  }
-
-  private generateId(): string {
-    return Math.random().toString(36).substr(2, 9);
+    return this.userRepository.save(user);
   }
 
   // For testing purposes
-  getAllUsers(): Promise<User[]> {
-    return Promise.resolve(
-      this.users.map((user) => ({
-        ...user,
-        password: undefined, // Don't return passwords
-      })),
-    );
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+    const users = await this.userRepository.find();
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      get fullName() {
+        return `${this.firstName} ${this.lastName}`;
+      },
+    }));
   }
 }

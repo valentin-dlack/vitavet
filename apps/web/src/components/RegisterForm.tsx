@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { authService, RegisterData } from '../services/auth.service';
+import { authService } from '../services/auth.service';
+import type { RegisterData } from '../services/auth.service';
 
 interface RegisterFormProps {
   onSuccess: (message: string) => void;

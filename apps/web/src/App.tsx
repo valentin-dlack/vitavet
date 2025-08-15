@@ -1,11 +1,20 @@
-import { useEffect, useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Home } from './pages/Home';
+import { Register } from './pages/Register';
+import { Login } from './pages/Login';
+import { Clinics } from './pages/Clinics';
 
 function App() {
-  const [status, setStatus] = useState('loading...');
-  useEffect(() => {
-    fetch('http://localhost:3000/api/health')
-      .then(r => r.json()).then(d => setStatus(d.status)).catch(()=>setStatus('error'));
-  }, []);
-  return <h1>VitaVet – API health: {status}</h1>;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/clinics" element={<Clinics />} />
+      </Routes>
+    </Router>
+  );
 }
+
 export default App;

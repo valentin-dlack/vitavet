@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RegisterForm } from '../components/RegisterForm';
 
 export function Register() {
@@ -54,14 +55,14 @@ export function Register() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <a
-                href="/login"
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Sign in instead
-              </a>
-            </div>
+                         <div className="mt-6">
+               <Link
+                 to="/login"
+                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+               >
+                 Sign in instead
+               </Link>
+             </div>
           </div>
         </div>
       </div>

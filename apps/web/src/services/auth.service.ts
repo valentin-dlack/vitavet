@@ -28,6 +28,8 @@ export interface AuthResponse {
 
 class AuthService {
   private baseUrl = '/api/auth';
+  private tokenKey = 'authToken';
+  private userKey = 'authUser';
 
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await fetch(`${this.baseUrl}/register`, {
@@ -63,24 +65,41 @@ class AuthService {
     return response.json();
   }
 
-  // Store token in localStorage
+  // Token helpers
   setToken(token: string): void {
-    localStorage.setItem('authToken', token);
+    localStorage.setItem(this.tokenKey, token);
   }
 
-  // Get token from localStorage
   getToken(): string | null {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem(this.tokenKey);
   }
 
-  // Remove token from localStorage
   removeToken(): void {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(this.tokenKey);
   }
 
-  // Check if user is authenticated
+  // User helpers
+  setUser(user: User): void {
+    localStorage.setItem(this.userKey, JSON.stringify(user));
+  }
+
+  getUser(): User | null {
+    const raw = localStorage.getItem(this.userKey);
+    return raw ? (JSON.parse(raw) as User) : null;
+  }
+
+  removeUser(): void {
+    localStorage.removeItem(this.userKey);
+  }
+
+  // Session
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  logout(): void {
+    this.removeToken();
+    this.removeUser();
   }
 }
 

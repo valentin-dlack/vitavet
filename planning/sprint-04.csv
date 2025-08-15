@@ -9,3 +9,11 @@ AC: POST /users role=ASV","MVP","ADMIN"
 AC: PATCH status=Cancelled","POST_MVP","RDV"
 "US-02b – Filter by specialty","Story","As a pet owner I want to filter clinics by specialty so that I choose the right clinic
 AC: multi-select filter","POST_MVP","SEARCH"
+"US-08e – Create clinic (Webmaster only)","Story","As a webmaster I want to create a clinic so that I initialize the workspace
+AC: POST /api/clinics {name,city,postcode} → 201 {id,name,city,postcode,active}
+AC: Only role=WEBMASTER authorized (403 otherwise)
+AC: Minimal form /admin/clinics/new with validation","MVP","ADMIN"
+"US-08f – Assign user role to clinic","Story","As a clinic manager I want to assign a role to a user so that access is granted
+AC: POST /api/clinics/:id/roles {userId, role} (role ∈ {MANAGER_CLINIC,VET,ASV})
+AC: Guard: MANAGER_CLINIC or WEBMASTER
+AC: Returns current assignments","MVP","ADMIN"
