@@ -10,7 +10,7 @@ export default defineConfig({
 		setupFiles: ['./src/test-setup.ts'],
 		coverage: {
 			provider: 'v8',
-			reporter: ['text', 'html', 'lcov'],
+			reporter: ['text', 'html', 'lcov', 'json-summary'],
 			all: true,
 			include: ['src/**/*.{ts,tsx}'],
 			exclude: ['src/main.tsx', 'src/vite-env.d.ts', '**/__tests__/**'],

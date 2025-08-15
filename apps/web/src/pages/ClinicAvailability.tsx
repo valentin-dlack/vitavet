@@ -12,7 +12,7 @@ export function ClinicAvailability() {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [date, setDate] = useState<string>(() => searchParams.get('date') || toYyyyMmDd(new Date()));
-	const [vetUserId, setVetUserId] = useState<string | undefined>(() => searchParams.get('vetUserId') || undefined);
+	const [vetUserId] = useState<string | undefined>(() => searchParams.get('vetUserId') || undefined);
 	const [slots, setSlots] = useState<AvailableSlot[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export function ClinicAvailability() {
 		next.set('date', date);
 		if (vetUserId) next.set('vetUserId', vetUserId); else next.delete('vetUserId');
 		setSearchParams(next, { replace: true });
-	}, [date, vetUserId]);
+	}, [date, searchParams, setSearchParams, vetUserId]);
 
 	const sortedSlots = useMemo(() => {
 		return [...slots].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());

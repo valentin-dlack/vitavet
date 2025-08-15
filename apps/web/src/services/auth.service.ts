@@ -16,6 +16,7 @@ export interface User {
   firstName: string;
   lastName: string;
   isEmailVerified: boolean;
+  role?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -114,7 +115,7 @@ class AuthService {
 
   private emit(): void {
     for (const l of this.listeners) {
-      try { l(); } catch {}
+      try { l(); } catch { /* empty */ }
     }
   }
 }

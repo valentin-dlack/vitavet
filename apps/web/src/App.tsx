@@ -6,10 +6,15 @@ import { Clinics } from './pages/Clinics';
 import { ClinicDetail } from './pages/ClinicDetail';
 import { ClinicAvailability } from './pages/ClinicAvailability';
 import { Profile } from './pages/Profile';
+import { Unauthorized } from './pages/Unauthorized';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { PendingAppointments } from './pages/PendingAppointments';
 import { useAuth } from './hooks/useAuth';
+import { RolePanel } from './pages/RolePanel';
+import { VetAgenda } from './pages/VetAgenda';
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -18,6 +23,9 @@ function App() {
             <Link to="/" className="font-semibold">🐾 VitaVet</Link>
             <nav className="text-sm text-gray-600 flex gap-4">
               <Link to="/clinics" className="hover:text-gray-900">Cliniques</Link>
+              {isAuthenticated && ['ASV','VET','ADMIN_CLINIC'].includes((user?.role || '')) ? (
+                <Link to="/panel" className="hover:text-gray-900">Panel</Link>
+              ) : null}
               {isAuthenticated ? (
                 <Link to="/profile" className="hover:text-gray-900">Profil</Link>
               ) : (
@@ -34,10 +42,34 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
             <Route path="/clinics" element={<Clinics />} />
             <Route path="/clinics/:clinicId" element={<ClinicDetail />} />
-            <Route path="/clinics/:clinicId/availability" element={<ClinicAvailability />} />
+            <Route path="/clinics/:clinicId/availability" element={
+              <ProtectedRoute>
+                <ClinicAvailability />
+              </ProtectedRoute>
+            } />
+            <Route path="/asv/pending" element={
+              <ProtectedRoute>
+                <PendingAppointments />
+              </ProtectedRoute>
+            } />
+            <Route path="/panel" element={
+              <ProtectedRoute>
+                <RolePanel />
+              </ProtectedRoute>
+            } />
+            <Route path="/vet/agenda" element={
+              <ProtectedRoute>
+                <VetAgenda />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
       </div>

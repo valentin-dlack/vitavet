@@ -19,47 +19,19 @@ export interface AppointmentResponse {
 	message?: string;
 }
 
+import { httpService } from './http.service';
+
 class AppointmentsService {
-	private baseUrl = '/api/appointments';
-
 	async createAppointment(data: CreateAppointmentData): Promise<AppointmentResponse> {
-		const response = await fetch(this.baseUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(data),
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message || 'Failed to create appointment');
-		}
-
-		return response.json();
+		return httpService.post<AppointmentResponse>('/appointments', data);
 	}
 
 	async getPendingAppointments(): Promise<AppointmentResponse[]> {
-		const response = await fetch(`${this.baseUrl}/pending`);
-		
-		if (!response.ok) {
-			throw new Error('Failed to fetch pending appointments');
-		}
-
-		return response.json();
+		return httpService.get<AppointmentResponse[]>('/appointments/pending');
 	}
 
 	async confirmAppointment(id: string): Promise<AppointmentResponse> {
-		const response = await fetch(`${this.baseUrl}/${id}/confirm`, {
-			method: 'PATCH',
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message || 'Failed to confirm appointment');
-		}
-
-		return response.json();
+		return httpService.patch<AppointmentResponse>(`/appointments/${id}/confirm`);
 	}
 }
 

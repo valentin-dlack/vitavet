@@ -9,8 +9,14 @@
     "build": "pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm --filter api lint && pnpm --filter web lint",
     "format": "pnpm --filter api format && pnpm --filter web format",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "coverage": "pnpm --filter api test:cov && pnpm --filter api test:e2e:cov && pnpm --filter web test:cov",
+    "coverage:summary": "node scripts/coverage-summary.mjs",
     "prepare": "husky",
-    "commit-msg": "husky"
+    "commit-msg": "husky",
+    "db:dump": "node scripts/db-dump.mjs",
+    "db:reset": "pnpm --filter api db:reset",
+    "api:seed": "pnpm --filter api seed:dev"
   },
   "keywords": [],
   "author": "",

@@ -76,6 +76,9 @@ export class AuthService {
     // Generate JWT token
     const token = this.generateToken(user);
 
+    // Resolve primary role for convenience in frontend RBAC display
+    const primaryRole = await this.usersService.findPrimaryRole(user.id);
+
     // Return user data without password
     const userWithoutPassword = {
       id: user.id,
@@ -83,6 +86,7 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       isEmailVerified: user.isEmailVerified,
+      role: primaryRole || undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

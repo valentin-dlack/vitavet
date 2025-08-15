@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { User } from './entities/user.entity';
+import { UserClinicRole } from './entities/user-clinic-role.entity';
 
 // Simple in-memory mock repository
 function createUserRepositoryMock() {
@@ -66,6 +67,12 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: repoMock,
+        },
+        {
+          provide: getRepositoryToken(UserClinicRole),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
+          },
         },
       ],
     }).compile();
