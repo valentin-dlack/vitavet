@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
@@ -75,7 +75,7 @@ export class AppointmentsService {
   async getPendingAppointments(
     clinicId?: string,
   ): Promise<AppointmentResponse[]> {
-    const where: any = { status: 'PENDING' };
+    const where: FindOptionsWhere<Appointment> = { status: 'PENDING' };
     if (clinicId) where.clinicId = clinicId;
 
     const appointments = await this.appointmentRepository.find({

@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 @Controller('appointments')
 @UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
@@ -24,7 +25,7 @@ export class AppointmentsController {
   @Roles('OWNER', 'VET', 'ASV')
   async createAppointment(
     @Body() createDto: CreateAppointmentDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     const appointment = await this.appointmentsService.createAppointment(
       createDto,

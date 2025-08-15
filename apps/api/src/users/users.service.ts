@@ -56,8 +56,12 @@ export class UsersService {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async findPrimaryRole(userId: string): Promise<UserClinicRole['role'] | null> {
-    const link = await this.userClinicRoleRepository.findOne({ where: { userId } });
+  async findPrimaryRole(
+    userId: string,
+  ): Promise<UserClinicRole['role'] | null> {
+    const link = await this.userClinicRoleRepository.findOne({
+      where: { userId },
+    });
     return link?.role ?? null;
   }
 
@@ -89,9 +93,7 @@ export class UsersService {
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      get fullName() {
-        return `${this.firstName} ${this.lastName}`;
-      },
+      fullName: user.fullName,
     }));
   }
 }

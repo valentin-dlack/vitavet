@@ -44,9 +44,9 @@ export function LoginForm() {
       const result = await authService.login(form);
       authService.setToken(result.token);
       authService.setUser(result.user);
-      
-      // Redirect to the page they were trying to access, or home
-      const from = (location.state as any)?.from?.pathname || '/';
+
+      const state = location.state as { from?: { pathname?: string } } | null;
+      const from = state?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';

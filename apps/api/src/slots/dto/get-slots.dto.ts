@@ -6,7 +6,7 @@ export class GetSlotsDto {
   clinicId: string;
 
   @IsDateString()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: string }) => {
     // Ensure date is in YYYY-MM-DD format
     const date = new Date(value);
     return date.toISOString().split('T')[0];

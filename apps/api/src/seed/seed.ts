@@ -32,7 +32,9 @@ async function bootstrap() {
     // Create users
     const owner = await usersService
       .create('owner@example.com', 'password123', 'Olivia', 'Owner')
-      .catch(async () => (await usersService.findByEmail('owner@example.com'))!);
+      .catch(
+        async () => (await usersService.findByEmail('owner@example.com'))!,
+      );
 
     const vet1 = await usersService
       .create('vet1@example.com', 'password123', 'Victor', 'Vet')
@@ -48,13 +50,21 @@ async function bootstrap() {
 
     const adminClinic = await usersService
       .create('admin@example.com', 'password123', 'Alex', 'Admin')
-      .catch(async () => (await usersService.findByEmail('admin@example.com'))!);
+      .catch(
+        async () => (await usersService.findByEmail('admin@example.com'))!,
+      );
 
     // Create clinic
-    let clinic = await clinicRepo.findOne({ where: { name: 'Clinique VitaVet' } });
+    let clinic = await clinicRepo.findOne({
+      where: { name: 'Clinique VitaVet' },
+    });
     if (!clinic) {
       clinic = await clinicRepo.save(
-        clinicRepo.create({ name: 'Clinique VitaVet', postcode: '75011', city: 'Paris' }),
+        clinicRepo.create({
+          name: 'Clinique VitaVet',
+          postcode: '75011',
+          city: 'Paris',
+        }),
       );
     }
 
@@ -64,7 +74,11 @@ async function bootstrap() {
       { userId: vet1.id, clinicId: clinic.id, role: 'VET' as const },
       { userId: vet2.id, clinicId: clinic.id, role: 'VET' as const },
       { userId: asv.id, clinicId: clinic.id, role: 'ASV' as const },
-      { userId: adminClinic.id, clinicId: clinic.id, role: 'ADMIN_CLINIC' as const },
+      {
+        userId: adminClinic.id,
+        clinicId: clinic.id,
+        role: 'ADMIN_CLINIC' as const,
+      },
     ];
 
     for (const r of roles) {
@@ -75,22 +89,36 @@ async function bootstrap() {
     }
 
     // Animals for owner
-    let animal1 = await animalRepo.findOne({ where: { name: 'Milo', clinicId: clinic.id } });
+    let animal1 = await animalRepo.findOne({
+      where: { name: 'Milo', clinicId: clinic.id },
+    });
     if (!animal1) {
       animal1 = await animalRepo.save(
-        animalRepo.create({ name: 'Milo', clinicId: clinic.id, ownerId: owner.id }),
+        animalRepo.create({
+          name: 'Milo',
+          clinicId: clinic.id,
+          ownerId: owner.id,
+        }),
       );
     }
 
-    let animal2 = await animalRepo.findOne({ where: { name: 'Luna', clinicId: clinic.id } });
+    let animal2 = await animalRepo.findOne({
+      where: { name: 'Luna', clinicId: clinic.id },
+    });
     if (!animal2) {
       animal2 = await animalRepo.save(
-        animalRepo.create({ name: 'Luna', clinicId: clinic.id, ownerId: owner.id }),
+        animalRepo.create({
+          name: 'Luna',
+          clinicId: clinic.id,
+          ownerId: owner.id,
+        }),
       );
     }
 
     // Appointment type
-    let consult30 = await aptTypeRepo.findOne({ where: { label: 'Consultation 30m' } });
+    let consult30 = await aptTypeRepo.findOne({
+      where: { label: 'Consultation 30m' },
+    });
     if (!consult30) {
       consult30 = await aptTypeRepo.save(
         aptTypeRepo.create({ label: 'Consultation 30m', durationMin: 30 }),
@@ -98,10 +126,18 @@ async function bootstrap() {
     }
 
     // Reminder rule
-    let rule = await ruleRepo.findOne({ where: { scope: 'APPOINTMENT' as any } });
+    let rule = await ruleRepo.findOne({
+      where: { scope: 'APPOINTMENT' },
+    });
     if (!rule) {
       rule = await ruleRepo.save(
-        ruleRepo.create({ scope: 'APPOINTMENT' as any, offsetDays: -7, channelEmail: true, channelPush: false, active: true }),
+        ruleRepo.create({
+          scope: 'APPOINTMENT',
+          offsetDays: -7,
+          channelEmail: true,
+          channelPush: false,
+          active: true,
+        }),
       );
     }
 
@@ -112,7 +148,9 @@ async function bootstrap() {
     const today1030 = new Date(now);
     today1030.setHours(10, 30, 0, 0);
 
-    const pendingApt = await aptRepo.findOne({ where: { clinicId: clinic.id, animalId: animal1.id, startsAt: today10 } });
+    const pendingApt = await aptRepo.findOne({
+      where: { clinicId: clinic.id, animalId: animal1.id, startsAt: today10 },
+    });
     if (!pendingApt) {
       await aptRepo.save(
         aptRepo.create({
@@ -128,7 +166,9 @@ async function bootstrap() {
       );
     }
 
-    const confirmedApt = await aptRepo.findOne({ where: { clinicId: clinic.id, animalId: animal2.id, startsAt: today1030 } });
+    const confirmedApt = await aptRepo.findOne({
+      where: { clinicId: clinic.id, animalId: animal2.id, startsAt: today1030 },
+    });
     if (!confirmedApt) {
       await aptRepo.save(
         aptRepo.create({
@@ -145,10 +185,20 @@ async function bootstrap() {
     }
 
     // Reminder instance example J-7
-    const onePending = await aptRepo.findOne({ where: { clinicId: clinic.id, status: 'PENDING' } });
+    const onePending = await aptRepo.findOne({
+      where: { clinicId: clinic.id, status: 'PENDING' },
+    });
     if (onePending) {
-      const sendAt = new Date(onePending.startsAt.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const exists = await instanceRepo.findOne({ where: { ruleId: rule.id, userId: owner.id, appointmentId: onePending.id } });
+      const sendAt = new Date(
+        onePending.startsAt.getTime() - 7 * 24 * 60 * 60 * 1000,
+      );
+      const exists = await instanceRepo.findOne({
+        where: {
+          ruleId: rule.id,
+          userId: owner.id,
+          appointmentId: onePending.id,
+        },
+      });
       if (!exists) {
         await instanceRepo.save(
           instanceRepo.create({
@@ -156,7 +206,7 @@ async function bootstrap() {
             userId: owner.id,
             appointmentId: onePending.id,
             sendAt,
-            status: 'SCHEDULED' as any,
+            status: 'SCHEDULED',
             payload: {},
           }),
         );
@@ -164,7 +214,7 @@ async function bootstrap() {
     }
 
     // Output helpful demo credentials
-    // eslint-disable-next-line no-console
+
     console.log('\nSeed complete. Demo accounts:');
     console.log('OWNER  : owner@example.com / password123');
     console.log('VET #1 : vet1@example.com  / password123');
@@ -177,8 +227,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error(e);
   process.exit(1);
 });
-
