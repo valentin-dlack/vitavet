@@ -30,6 +30,7 @@ class AuthService {
   private baseUrl = '/api/auth';
   private tokenKey = 'authToken';
   private userKey = 'authUser';
+  private listeners = new Set<() => void>();
 
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await fetch(`${this.baseUrl}/register`, {
@@ -68,6 +69,7 @@ class AuthService {
   // Token helpers
   setToken(token: string): void {
     localStorage.setItem(this.tokenKey, token);
+    this.emit();
   }
 
   getToken(): string | null {
@@ -76,11 +78,13 @@ class AuthService {
 
   removeToken(): void {
     localStorage.removeItem(this.tokenKey);
+    this.emit();
   }
 
   // User helpers
   setUser(user: User): void {
     localStorage.setItem(this.userKey, JSON.stringify(user));
+    this.emit();
   }
 
   getUser(): User | null {
@@ -90,6 +94,7 @@ class AuthService {
 
   removeUser(): void {
     localStorage.removeItem(this.userKey);
+    this.emit();
   }
 
   // Session
@@ -100,6 +105,17 @@ class AuthService {
   logout(): void {
     this.removeToken();
     this.removeUser();
+  }
+
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private emit(): void {
+    for (const l of this.listeners) {
+      try { l(); } catch {}
+    }
   }
 }
 

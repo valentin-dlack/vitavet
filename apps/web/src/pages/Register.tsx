@@ -7,10 +7,10 @@ export function Register() {
 
   const handleSuccess = (successMessage: string) => {
     setMessage({ type: 'success', text: successMessage });
-    // Redirect to dashboard after successful registration
+    // Redirect home after successful registration
     setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 2000);
+      window.location.href = '/';
+    }, 1000);
   };
 
   const handleError = (errorMessage: string) => {
