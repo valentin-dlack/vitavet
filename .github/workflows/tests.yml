@@ -39,7 +39,7 @@ jobs:
           version: 10.14.0
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Wait for Postgres to be ready
         shell: bash
