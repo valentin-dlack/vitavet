@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { LoginData } from '../services/auth.service';
 import { authService } from '../services/auth.service';
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState<LoginData>({ email: '', password: '' });
   const [errors, setErrors] = useState<{ email?: string; password?: string; global?: string }>({});
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +44,10 @@ export function LoginForm() {
       const result = await authService.login(form);
       authService.setToken(result.token);
       authService.setUser(result.user);
-      navigate('/');
+
+      const state = location.state as { from?: { pathname?: string } } | null;
+      const from = state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setErrors({ global: message });

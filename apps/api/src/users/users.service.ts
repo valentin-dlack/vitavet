@@ -7,12 +7,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { UserClinicRole } from './entities/user-clinic-role.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserClinicRole)
+    private readonly userClinicRoleRepository: Repository<UserClinicRole>,
   ) {}
 
   async create(
@@ -53,6 +56,15 @@ export class UsersService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  async findPrimaryRole(
+    userId: string,
+  ): Promise<UserClinicRole['role'] | null> {
+    const link = await this.userClinicRoleRepository.findOne({
+      where: { userId },
+    });
+    return link?.role ?? null;
+  }
+
   async validatePassword(user: User, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
@@ -81,9 +93,7 @@ export class UsersService {
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      get fullName() {
-        return `${this.firstName} ${this.lastName}`;
-      },
+      fullName: user.fullName,
     }));
   }
 }

@@ -2,6 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Clinic } from './entities/clinic.entity';
+import { NotFoundException } from '@nestjs/common';
+
+export interface Vet {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  specialty?: string;
+}
 
 @Injectable()
 export class ClinicsService {
@@ -15,6 +24,13 @@ export class ClinicsService {
     // Fast LIKE( prefix ) on indexed column
     return this.clinicRepository.find({
       where: { postcode: ILike(`${postcode}%`) },
+      order: { city: 'ASC', name: 'ASC' },
+      take: 25,
+    });
+  }
+
+  async getAllClinics(): Promise<Clinic[]> {
+    return this.clinicRepository.find({
       order: { city: 'ASC', name: 'ASC' },
       take: 25,
     });
@@ -96,5 +112,43 @@ export class ClinicsService {
         await this.clinicRepository.save(clinic);
       }
     }
+  }
+
+  async getVetsByClinic(clinicId: string): Promise<Vet[]> {
+    // Vérifier que la clinique existe
+    const clinic = await this.clinicRepository.findOne({
+      where: { id: clinicId },
+    });
+
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    // Données fictives de vétérinaires pour la démo
+    const mockVets: Vet[] = [
+      {
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        firstName: 'Dr. Martin',
+        lastName: 'Dubois',
+        email: 'martin.dubois@vitavet.fr',
+        specialty: 'Chirurgie générale',
+      },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440002',
+        firstName: 'Dr. Sophie',
+        lastName: 'Leroy',
+        email: 'sophie.leroy@vitavet.fr',
+        specialty: 'Dermatologie',
+      },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440003',
+        firstName: 'Dr. Pierre',
+        lastName: 'Moreau',
+        email: 'pierre.moreau@vitavet.fr',
+        specialty: 'Cardiologie',
+      },
+    ];
+
+    return mockVets;
   }
 }

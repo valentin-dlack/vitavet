@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { databaseConfig } from './config/database.config';
 import { ClinicsModule } from './clinics/clinics.module';
 import { SlotsModule } from './slots/slots.module';
+import { AppointmentsModule } from './appointments/appointments.module';
 import { User } from './users/entities/user.entity';
 import { Clinic } from './clinics/entities/clinic.entity';
 import { UserClinicRole } from './users/entities/user-clinic-role.entity';
@@ -50,6 +51,7 @@ import { TimeSlot } from './slots/entities/time-slot.entity';
     UsersModule,
     ClinicsModule,
     SlotsModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { clinicsService, type ClinicDto } from '../services/clinics.service';
 
 export function ClinicSearch() {
@@ -6,6 +7,7 @@ export function ClinicSearch() {
   const [results, setResults] = useState<ClinicDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inRouter = useInRouterContext();
 
   const onSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +48,23 @@ export function ClinicSearch() {
 
       <ul className="mt-4" aria-live="polite">
         {results.map((c) => (
-          <li key={c.id} className="border-b py-2">
-            <span className="font-medium">{c.name}</span>
-            <span className="text-gray-600"> — {c.postcode} {c.city}</span>
+          <li key={c.id} className="border rounded p-4 mb-3 flex items-center justify-between">
+            <div>
+              <div className="font-medium">{c.name}</div>
+              <div className="text-gray-600">{c.postcode} {c.city}</div>
+            </div>
+            {inRouter ? (
+              <Link
+                to={`/clinics/${c.id}`}
+                className="px-3 py-2 bg-blue-600 text-white rounded"
+              >
+                Choisir
+              </Link>
+            ) : (
+              <button type="button" className="px-3 py-2 bg-blue-600 text-white rounded" aria-label={`Choisir ${c.name}`}>
+                Choisir
+              </button>
+            )}
           </li>
         ))}
         {(!loading && results.length === 0 && postcode.trim()) && (
