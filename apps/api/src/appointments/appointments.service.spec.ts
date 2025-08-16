@@ -1,0 +1,266 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AppointmentsService } from './appointments.service';
+import { Appointment } from './entities/appointment.entity';
+import { User } from '../users/entities/user.entity';
+import { Animal } from '../animals/entities/animal.entity';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+
+describe('AppointmentsService', () => {
+  let service: AppointmentsService;
+  let appointmentRepo: Repository<Appointment>;
+  let userRepo: Repository<User>;
+  let animalRepo: Repository<Animal>;
+
+  const appointmentRepoMock = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  } as unknown as Repository<Appointment>;
+
+  const userRepoMock = {
+    find: jest.fn(),
+  } as unknown as Repository<User>;
+
+  const animalRepoMock = {
+    find: jest.fn(),
+  } as unknown as Repository<Animal>;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AppointmentsService,
+        {
+          provide: getRepositoryToken(Appointment),
+          useValue: appointmentRepoMock,
+        },
+        { provide: getRepositoryToken(User), useValue: userRepoMock },
+        { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
+      ],
+    }).compile();
+
+    service = module.get<AppointmentsService>(AppointmentsService);
+    appointmentRepo = module.get(getRepositoryToken(Appointment));
+    userRepo = module.get(getRepositoryToken(User));
+    animalRepo = module.get(getRepositoryToken(Animal));
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+    expect(appointmentRepo).toBeDefined();
+    expect(userRepo).toBeDefined();
+    expect(animalRepo).toBeDefined();
+  });
+
+  describe('createAppointment', () => {
+    it('creates a pending appointment and returns mapped response', async () => {
+      const now = new Date('2024-01-15T09:00:00.000Z');
+      const dto = {
+        clinicId: 'clinic-1',
+        animalId: 'animal-1',
+        vetUserId: 'vet-1',
+        startsAt: now.toISOString(),
+        typeId: undefined,
+      };
+
+      (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(null);
+      const created: Partial<Appointment> = {
+        ...dto,
+        startsAt: now,
+        endsAt: new Date(now.getTime() + 30 * 60 * 1000),
+        status: 'PENDING',
+        createdByUserId: 'creator-1',
+      };
+      (appointmentRepo.create as any) = jest.fn().mockReturnValue(created);
+      const saved = {
+        id: 'apt-1',
+        ...created,
+        createdAt: new Date('2024-01-10T10:00:00.000Z'),
+      } as unknown as Appointment;
+      (appointmentRepo.save as any) = jest.fn().mockResolvedValue(saved);
+
+      const res = await service.createAppointment(dto as any, 'creator-1');
+
+      expect(appointmentRepo.findOne).toHaveBeenCalled();
+      expect(appointmentRepo.create).toHaveBeenCalled();
+      expect(appointmentRepo.save).toHaveBeenCalled();
+      expect(res).toMatchObject({
+        id: 'apt-1',
+        clinicId: 'clinic-1',
+        animalId: 'animal-1',
+        vetUserId: 'vet-1',
+        status: 'PENDING',
+      });
+      expect(new Date(res.endsAt).getTime()).toBe(
+        new Date(dto.startsAt).getTime() + 30 * 60 * 1000,
+      );
+    });
+
+    it('throws ConflictException when slot already booked', async () => {
+      (appointmentRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'conflict' });
+
+      await expect(
+        service.createAppointment(
+          {
+            clinicId: 'clinic-1',
+            animalId: 'animal-1',
+            vetUserId: 'vet-1',
+            startsAt: new Date().toISOString(),
+          } as any,
+          'creator-1',
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('getPendingAppointments', () => {
+    it('returns mapped pending appointments with vet, animal and owner', async () => {
+      const aptA: Appointment = {
+        id: 'a',
+        clinicId: 'c1',
+        animalId: 'an1',
+        vetUserId: 'v1',
+        typeId: null,
+        status: 'PENDING',
+        startsAt: new Date('2024-01-10T09:00:00.000Z'),
+        endsAt: new Date('2024-01-10T09:30:00.000Z'),
+        createdByUserId: 'creator',
+        createdAt: new Date('2024-01-09T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-09T12:00:00.000Z'),
+      } as any;
+      const aptB: Appointment = {
+        id: 'b',
+        clinicId: 'c1',
+        animalId: 'an2',
+        vetUserId: 'v2',
+        typeId: null,
+        status: 'PENDING',
+        startsAt: new Date('2024-01-11T09:00:00.000Z'),
+        endsAt: new Date('2024-01-11T09:30:00.000Z'),
+        createdByUserId: 'creator',
+        createdAt: new Date('2024-01-09T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-09T12:00:00.000Z'),
+      } as any;
+
+      (appointmentRepo.find as any) = jest.fn().mockResolvedValue([aptA, aptB]);
+
+      // userRepo.find is called twice: first for vets, then for owners
+      (userRepo.find as any) = jest
+        .fn()
+        .mockImplementation(({ where }: any) => {
+          const ids = (where as any[]).map((w: { id: string }) => w.id);
+          // if includes vets ids
+          if (ids.includes('v1') || ids.includes('v2')) {
+            return Promise.resolve([
+              {
+                id: 'v1',
+                firstName: 'Vet',
+                lastName: 'One',
+                email: 'v1@ex.com',
+              },
+              {
+                id: 'v2',
+                firstName: 'Vet',
+                lastName: 'Two',
+                email: 'v2@ex.com',
+              },
+            ]);
+          }
+          // owners ids
+          return Promise.resolve([
+            {
+              id: 'owner-1',
+              firstName: 'Alice',
+              lastName: 'Owner',
+              email: 'alice@ex.com',
+            },
+            {
+              id: 'owner-2',
+              firstName: 'Bob',
+              lastName: 'Owner',
+              email: 'bob@ex.com',
+            },
+          ]);
+        });
+
+      (animalRepo.find as any) = jest.fn().mockResolvedValue([
+        { id: 'an1', name: 'Fido', birthdate: null, ownerId: 'owner-1' },
+        {
+          id: 'an2',
+          name: 'Luna',
+          birthdate: '2019-05-10',
+          ownerId: 'owner-2',
+        },
+      ]);
+
+      const res = await service.getPendingAppointments();
+      expect(res).toHaveLength(2);
+      expect(res[0]).toMatchObject({
+        id: 'a',
+        vet: {
+          id: 'v1',
+          firstName: 'Vet',
+          lastName: 'One',
+          email: 'v1@ex.com',
+        },
+        animal: { id: 'an1', name: 'Fido', birthdate: null },
+        owner: {
+          id: 'owner-1',
+          firstName: 'Alice',
+          lastName: 'Owner',
+          email: 'alice@ex.com',
+        },
+      });
+      expect(res[1]).toMatchObject({ id: 'b' });
+      expect(appointmentRepo.find).toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmAppointment', () => {
+    it('confirms a pending appointment', async () => {
+      const pending: Appointment = {
+        id: 'x',
+        clinicId: 'c',
+        animalId: 'an',
+        vetUserId: 'v',
+        status: 'PENDING',
+        startsAt: new Date('2024-01-10T10:00:00.000Z'),
+        endsAt: new Date('2024-01-10T10:30:00.000Z'),
+        createdByUserId: 'creator',
+        createdAt: new Date('2024-01-09T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-09T12:00:00.000Z'),
+        typeId: null,
+      } as any;
+
+      (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(pending);
+      (appointmentRepo.save as any) = jest
+        .fn()
+        .mockImplementation((a: Appointment) => ({ ...a }));
+
+      const res = await service.confirmAppointment('x');
+      expect(res.status).toBe('CONFIRMED');
+      expect(appointmentRepo.save).toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when appointment missing', async () => {
+      (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(null);
+      await expect(service.confirmAppointment('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws ConflictException when status not PENDING', async () => {
+      (appointmentRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'z', status: 'CONFIRMED' });
+      await expect(service.confirmAppointment('z')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+});

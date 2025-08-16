@@ -17,6 +17,9 @@ export interface AppointmentResponse {
 	endsAt: string;
 	createdAt: string;
 	message?: string;
+	vet?: { id: string; firstName: string; lastName: string; email: string };
+	animal?: { id: string; name: string; birthdate?: string | null };
+	owner?: { id: string; firstName: string; lastName: string; email: string };
 }
 
 import { httpService } from './http.service';
