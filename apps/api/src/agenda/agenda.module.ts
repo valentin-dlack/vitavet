@@ -9,7 +9,15 @@ import { AgendaBlock } from './entities/agenda-block.entity';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, Animal, User, AgendaBlock, TimeSlot])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Appointment,
+      Animal,
+      User,
+      AgendaBlock,
+      TimeSlot,
+    ]),
+  ],
   providers: [AgendaService],
   controllers: [AgendaController],
 })

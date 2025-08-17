@@ -60,7 +60,12 @@ export class AgendaController {
   async block(
     @CurrentUser() user: User,
     @Body()
-    body: { clinicId: string; startsAt: string; endsAt: string; reason?: string },
+    body: {
+      clinicId: string;
+      startsAt: string;
+      endsAt: string;
+      reason?: string;
+    },
   ) {
     const { clinicId, startsAt, endsAt, reason } = body;
     const res = await this.agendaService.blockSlots(

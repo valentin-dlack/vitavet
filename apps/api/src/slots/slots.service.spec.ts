@@ -5,6 +5,7 @@ import { SlotsService } from './slots.service';
 import { TimeSlot } from './entities/time-slot.entity';
 import { GetSlotsDto } from './dto/get-slots.dto';
 import { Appointment } from '../appointments/entities/appointment.entity';
+import { AgendaBlock } from '../agenda/entities/agenda-block.entity';
 
 describe('SlotsService', () => {
   let service: SlotsService;
@@ -21,6 +22,10 @@ describe('SlotsService', () => {
     find: jest.fn(),
   } as unknown as Repository<Appointment>;
 
+  const blockRepoMock = {
+    find: jest.fn().mockResolvedValue([]),
+  } as unknown as Repository<AgendaBlock>;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -29,6 +34,10 @@ describe('SlotsService', () => {
         {
           provide: getRepositoryToken(Appointment),
           useValue: appointmentRepoMock,
+        },
+        {
+          provide: getRepositoryToken(AgendaBlock),
+          useValue: blockRepoMock,
         },
       ],
     }).compile();
@@ -70,6 +79,7 @@ describe('SlotsService', () => {
     } as any;
     (timeRepoMock.find as any) = jest.fn().mockResolvedValue([s1, s2]);
     (appointmentRepoMock.find as any) = jest.fn().mockResolvedValue([]);
+    (blockRepoMock.find as any) = jest.fn().mockResolvedValue([]);
 
     const result = await service.getAvailableSlots(query);
 
@@ -112,6 +122,7 @@ describe('SlotsService', () => {
     } as any;
     (timeRepoMock.find as any) = jest.fn().mockResolvedValue([s1, s2]);
     (appointmentRepoMock.find as any) = jest.fn().mockResolvedValue([]);
+    (blockRepoMock.find as any) = jest.fn().mockResolvedValue([]);
 
     const result = await service.getAvailableSlots(query);
 
@@ -149,6 +160,7 @@ describe('SlotsService', () => {
     } as any;
     (timeRepoMock.find as any) = jest.fn().mockResolvedValue([s1, s2]);
     (appointmentRepoMock.find as any) = jest.fn().mockResolvedValue([]);
+    (blockRepoMock.find as any) = jest.fn().mockResolvedValue([]);
 
     const result = await service.getAvailableSlots(query);
 

@@ -17,8 +17,15 @@ describe('AgendaService', () => {
   const aptRepoMock = { find: jest.fn() } as unknown as Repository<Appointment>;
   const animalRepoMock = { find: jest.fn() } as unknown as Repository<Animal>;
   const userRepoMock = { find: jest.fn() } as unknown as Repository<User>;
-  const blockRepoMock = { save: jest.fn(), create: jest.fn() } as unknown as Repository<AgendaBlock>;
-  const timeSlotRepoMock = { find: jest.fn(), save: jest.fn() } as unknown as Repository<TimeSlot>;
+  const blockRepoMock = {
+    save: jest.fn(),
+    create: jest.fn(),
+    find: jest.fn().mockResolvedValue([]),
+  } as unknown as Repository<AgendaBlock>;
+  const timeSlotRepoMock = {
+    find: jest.fn(),
+    save: jest.fn(),
+  } as unknown as Repository<TimeSlot>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -117,10 +124,27 @@ describe('AgendaService', () => {
     const startsAt = new Date('2024-01-10T09:00:00.000Z');
     const endsAt = new Date('2024-01-10T10:00:00.000Z');
     (blockRepoMock.create as any) = jest.fn().mockReturnValue({ id: 'b1' });
-    (blockRepoMock.save as any) = jest.fn().mockResolvedValue({ id: 'b1', clinicId: 'c1', vetUserId: 'v1', blockStartsAt: startsAt, blockEndsAt: endsAt, reason: null });
+    (blockRepoMock.save as any) = jest.fn().mockResolvedValue({
+      id: 'b1',
+      clinicId: 'c1',
+      vetUserId: 'v1',
+      blockStartsAt: startsAt,
+      blockEndsAt: endsAt,
+      reason: null,
+    });
     (timeSlotRepoMock.find as any) = jest.fn().mockResolvedValue([
-      { id: 's1', startsAt: new Date('2024-01-10T09:00:00.000Z'), endsAt: new Date('2024-01-10T09:30:00.000Z'), isAvailable: true },
-      { id: 's2', startsAt: new Date('2024-01-10T10:00:00.000Z'), endsAt: new Date('2024-01-10T10:30:00.000Z'), isAvailable: true },
+      {
+        id: 's1',
+        startsAt: new Date('2024-01-10T09:00:00.000Z'),
+        endsAt: new Date('2024-01-10T09:30:00.000Z'),
+        isAvailable: true,
+      },
+      {
+        id: 's2',
+        startsAt: new Date('2024-01-10T10:00:00.000Z'),
+        endsAt: new Date('2024-01-10T10:30:00.000Z'),
+        isAvailable: true,
+      },
     ]);
     const res = await service.blockSlots('c1', 'v1', startsAt, endsAt);
     expect(blockRepoMock.save).toHaveBeenCalled();

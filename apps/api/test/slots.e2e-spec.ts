@@ -8,6 +8,7 @@ import { Clinic } from '../src/clinics/entities/clinic.entity';
 import { User } from '../src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { UserClinicRole } from '../src/users/entities/user-clinic-role.entity';
+import { TimeSlot } from '../src/slots/entities/time-slot.entity';
 
 describe('SlotsController (e2e)', () => {
   let app: INestApplication;
@@ -17,6 +18,7 @@ describe('SlotsController (e2e)', () => {
   let slotsService: SlotsService;
   let testClinic: Clinic;
   let testVet: User;
+  let seededDate: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -54,6 +56,24 @@ describe('SlotsController (e2e)', () => {
 
     // Seed slots for the test data
     await slotsService.seedDemoSlots(testClinic.id, testVet.id);
+
+    // Determine a date that we know has slots (local date of the first seeded slot)
+    const timeSlotRepo: Repository<TimeSlot> = moduleFixture.get(
+      getRepositoryToken(TimeSlot),
+    );
+    const firstSlot = await timeSlotRepo.findOne({
+      where: { clinicId: testClinic.id, vetUserId: testVet.id },
+      order: { startsAt: 'ASC' },
+    });
+    if (!firstSlot) throw new Error('No seeded slot found');
+    const d: Date =
+      firstSlot.startsAt instanceof Date
+        ? firstSlot.startsAt
+        : new Date(firstSlot.startsAt);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    seededDate = `${yyyy}-${mm}-${dd}`;
   });
 
   afterAll(async () => {
@@ -69,7 +89,7 @@ describe('SlotsController (e2e)', () => {
       .get('/api/slots')
       .query({
         clinicId: testClinic.id,
-        date: new Date().toISOString().split('T')[0], // Use today's date
+        date: seededDate,
       })
       .expect(200)
       .expect((res) => {
@@ -89,7 +109,7 @@ describe('SlotsController (e2e)', () => {
       .get('/api/slots')
       .query({
         clinicId: testClinic.id,
-        date: new Date().toISOString().split('T')[0],
+        date: seededDate,
         vetUserId: testVet.id,
       })
       .expect(200)

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan, MoreThan } from 'typeorm';
 import { TimeSlot } from './entities/time-slot.entity';
 import { GetSlotsDto } from './dto/get-slots.dto';
 import { Appointment } from '../appointments/entities/appointment.entity';
+import { AgendaBlock } from '../agenda/entities/agenda-block.entity';
 
 export interface AvailableSlot {
   id: string;
@@ -20,6 +21,8 @@ export class SlotsService {
     private readonly timeSlotRepository: Repository<TimeSlot>,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
+    @InjectRepository(AgendaBlock)
+    private readonly blockRepository: Repository<AgendaBlock>,
   ) {}
 
   async getAvailableSlots(query: GetSlotsDto): Promise<AvailableSlot[]> {
@@ -45,18 +48,44 @@ export class SlotsService {
       where: { clinicId },
     });
 
+    // Exclude slots that overlap blocks for this clinic and day (and vet if provided)
+    const blocks = await this.blockRepository.find({
+      where: {
+        clinicId,
+        ...(vetUserId ? { vetUserId } : {}),
+        blockStartsAt: LessThan(endDate),
+        blockEndsAt: MoreThan(startDate),
+      },
+    });
+
     const available = slots.filter((s) => {
-      const overlaps = appts.some((a: Appointment) => {
+      const sStart = new Date(s.startsAt).getTime();
+      const sEnd = new Date(s.endsAt).getTime();
+
+      const overlapsAppt = appts.some((a: Appointment) => {
         if (a.status === 'CANCELLED') return false;
         if (vetUserId && a.vetUserId !== vetUserId) return false;
-        const sStart = new Date(s.startsAt).getTime();
-        const sEnd = new Date(s.endsAt).getTime();
         const aStart = a.startsAt.getTime();
         const aEnd = a.endsAt.getTime();
         return sStart < aEnd && aStart < sEnd;
       });
+
+      const overlapsBlock = blocks.some((b) => {
+        // When vetUserId isn't specified in the query, match block with the slot's vet
+        if (
+          !vetUserId &&
+          b.vetUserId &&
+          s.vetUserId &&
+          b.vetUserId !== s.vetUserId
+        )
+          return false;
+        const bStart = b.blockStartsAt.getTime();
+        const bEnd = b.blockEndsAt.getTime();
+        return sStart < bEnd && bStart < sEnd;
+      });
+
       const inDay = s.startsAt >= startDate && s.startsAt <= endDate;
-      return inDay && !overlaps;
+      return inDay && !overlapsAppt && !overlapsBlock;
     });
 
     return available

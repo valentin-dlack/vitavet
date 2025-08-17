@@ -76,7 +76,11 @@ export function ClinicAvailability() {
 							</button>
 						))}
 						{!loading && !error && slots.length === 0 ? (
-							<div className="text-gray-600">Aucun créneau disponible pour cette date.</div>
+							<div className="text-gray-600">
+								{vetUserId
+									? 'Vétérinaire indisponible pour cette date.'
+									: 'Aucun créneau disponible pour cette date.'}
+							</div>
 						) : null}
 					</div>
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, Repository } from 'typeorm';
+import { Between, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { User } from '../users/entities/user.entity';
@@ -11,7 +11,8 @@ export interface AgendaItem {
   id: string;
   startsAt: string;
   endsAt: string;
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
+  reason?: string | null;
   animal?: {
     id: string;
     name: string;
@@ -48,8 +49,13 @@ export class AgendaService {
       where: { vetUserId, startsAt: Between(start, end) },
       order: { startsAt: 'ASC' },
     });
-
-    if (appts.length === 0) return [];
+    const blocks = await this.blockRepository.find({
+      where: {
+        vetUserId,
+        blockStartsAt: LessThan(end),
+        blockEndsAt: MoreThan(start),
+      },
+    });
 
     const animalIds = Array.from(new Set(appts.map((a) => a.animalId)));
     const animals = animalIds.length
@@ -65,7 +71,7 @@ export class AgendaService {
         })
       : [];
 
-    return appts.map((a) => {
+    const items = appts.map((a) => {
       const animal = animals.find((an) => an.id === a.animalId);
       const owner = animal
         ? owners.find((u) => u.id === animal.ownerId)
@@ -95,6 +101,16 @@ export class AgendaService {
           : undefined,
       } as AgendaItem;
     });
+    const blockItems: AgendaItem[] = blocks.map((b) => ({
+      id: b.id,
+      startsAt: b.blockStartsAt.toISOString(),
+      endsAt: b.blockEndsAt.toISOString(),
+      status: 'BLOCKED',
+      reason: b.reason ?? null,
+    }));
+    return [...items, ...blockItems].sort((a, b) =>
+      a.startsAt.localeCompare(b.startsAt),
+    );
   }
 
   async getVetRangeAgenda(
@@ -106,8 +122,13 @@ export class AgendaService {
       where: { vetUserId, startsAt: Between(start, end) },
       order: { startsAt: 'ASC' },
     });
-
-    if (appts.length === 0) return [];
+    const blocks = await this.blockRepository.find({
+      where: {
+        vetUserId,
+        blockStartsAt: LessThan(end),
+        blockEndsAt: MoreThan(start),
+      },
+    });
 
     const animalIds = Array.from(new Set(appts.map((a) => a.animalId)));
     const animals = animalIds.length
@@ -123,7 +144,7 @@ export class AgendaService {
         })
       : [];
 
-    return appts.map((a) => {
+    const items = appts.map((a) => {
       const animal = animals.find((an) => an.id === a.animalId);
       const owner = animal
         ? owners.find((u) => u.id === animal.ownerId)
@@ -153,6 +174,16 @@ export class AgendaService {
           : undefined,
       } as AgendaItem;
     });
+    const blockItems: AgendaItem[] = blocks.map((b) => ({
+      id: b.id,
+      startsAt: b.blockStartsAt.toISOString(),
+      endsAt: b.blockEndsAt.toISOString(),
+      status: 'BLOCKED',
+      reason: b.reason ?? null,
+    }));
+    return [...items, ...blockItems].sort((a, b) =>
+      a.startsAt.localeCompare(b.startsAt),
+    );
   }
 
   async blockSlots(
@@ -161,7 +192,12 @@ export class AgendaService {
     startsAt: Date,
     endsAt: Date,
     reason?: string,
-  ): Promise<{ id: string } & Pick<AgendaBlock, 'clinicId' | 'vetUserId' | 'blockStartsAt' | 'blockEndsAt' | 'reason'> > {
+  ): Promise<
+    { id: string } & Pick<
+      AgendaBlock,
+      'clinicId' | 'vetUserId' | 'blockStartsAt' | 'blockEndsAt' | 'reason'
+    >
+  > {
     if (endsAt <= startsAt) {
       throw new Error('Invalid range');
     }
@@ -176,8 +212,12 @@ export class AgendaService {
     const saved = await this.blockRepository.save(block);
 
     // Mark overlapping timeslots as unavailable
-    const slots = await this.timeSlotRepository.find({ where: { clinicId, vetUserId, isAvailable: true } });
-    const overlapping = slots.filter((s) => s.startsAt < endsAt && s.endsAt > startsAt);
+    const slots = await this.timeSlotRepository.find({
+      where: { clinicId, vetUserId, isAvailable: true },
+    });
+    const overlapping = slots.filter(
+      (s) => s.startsAt < endsAt && s.endsAt > startsAt,
+    );
     for (const s of overlapping) {
       s.isAvailable = false;
       await this.timeSlotRepository.save(s);

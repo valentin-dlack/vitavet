@@ -19,16 +19,14 @@ describe('AgendaController', () => {
           useValue: {
             getVetDayAgenda: jest.fn().mockResolvedValue([]),
             getVetRangeAgenda: jest.fn().mockResolvedValue([]),
-            blockSlots: jest
-              .fn()
-              .mockResolvedValue({
-                id: 'b1',
-                clinicId: 'c1',
-                vetUserId: 'v1',
-                blockStartsAt: new Date(),
-                blockEndsAt: new Date(Date.now() + 3600000),
-                reason: null,
-              }),
+            blockSlots: jest.fn().mockResolvedValue({
+              id: 'b1',
+              clinicId: 'c1',
+              vetUserId: 'v1',
+              blockStartsAt: new Date(),
+              blockEndsAt: new Date(Date.now() + 3600000),
+              reason: null,
+            }),
           },
         },
       ],
@@ -79,14 +77,11 @@ describe('AgendaController', () => {
   });
 
   it('block calls service and returns block info', async () => {
-    const res = await controller.block(
-      { id: 'v1' } as User,
-      {
-        clinicId: 'c1',
-        startsAt: new Date().toISOString(),
-        endsAt: new Date(Date.now() + 3600000).toISOString(),
-      },
-    );
+    const res = await controller.block({ id: 'v1' } as User, {
+      clinicId: 'c1',
+      startsAt: new Date().toISOString(),
+      endsAt: new Date(Date.now() + 3600000).toISOString(),
+    });
     expect(service.blockSlots).toHaveBeenCalled();
     expect(res).toHaveProperty('id');
   });

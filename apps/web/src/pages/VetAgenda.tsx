@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { agendaService, type AgendaItem } from '../services/agenda.service';
+import { clinicsService } from '../services/clinics.service';
 
 function toYmd(d: Date) {
   return d.toISOString().split('T')[0];
@@ -15,6 +16,7 @@ export function VetAgenda() {
   const [blockForm, setBlockForm] = useState<{ clinicId: string; start: string; end: string; reason: string }>({ clinicId: '', start: `${date}T09:00`, end: `${date}T10:00`, reason: '' });
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockError, setBlockError] = useState<string | null>(null);
+  const [clinics, setClinics] = useState<Array<{ id: string; name: string; city?: string; postcode?: string }>>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -25,6 +27,34 @@ export function VetAgenda() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agenda'))
       .finally(() => setLoading(false));
   }, [date, range]);
+
+  // Load clinics list lazily when opening block modal
+  useEffect(() => {
+    if (blockOpen && clinics.length === 0) {
+      clinicsService
+        .search('')
+        .then((all) => setClinics(all))
+        .catch(() => setClinics([]));
+    }
+  }, [blockOpen, clinics.length]);
+
+  function stepDate(direction: -1 | 1): void {
+    const current = new Date(date);
+    if (range === 'day') {
+      const shifted = new Date(current.getTime() + direction * 24 * 60 * 60 * 1000);
+      setDate(toYmd(shifted));
+      return;
+    }
+    if (range === 'week') {
+      const shifted = new Date(current.getTime() + direction * 7 * 24 * 60 * 60 * 1000);
+      setDate(toYmd(shifted));
+      return;
+    }
+    // month
+    const shifted = new Date(current);
+    shifted.setMonth(shifted.getMonth() + direction);
+    setDate(toYmd(shifted));
+  }
 
   const byHour = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
@@ -54,7 +84,7 @@ export function VetAgenda() {
             <button
               type="button"
               className="px-3 py-2 border rounded"
-              onClick={() => setDate(toYmd(new Date(new Date(date).getTime() - 24 * 60 * 60 * 1000)))}
+              onClick={() => stepDate(-1)}
             >
               ← Précédent
             </button>
@@ -68,7 +98,7 @@ export function VetAgenda() {
             <button
               type="button"
               className="px-3 py-2 border rounded"
-              onClick={() => setDate(toYmd(new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000)))}
+              onClick={() => stepDate(1)}
             >
               Suivant →
             </button>
@@ -118,8 +148,20 @@ export function VetAgenda() {
             {blockError ? <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{blockError}</div> : null}
             <div className="space-y-3">
               <div>
-                <label htmlFor="block-clinic" className="block text-sm text-gray-700">Clinique ID</label>
-                <input id="block-clinic" value={blockForm.clinicId} onChange={(e) => setBlockForm({ ...blockForm, clinicId: e.target.value })} className="mt-1 border rounded p-2 w-full" placeholder="UUID" />
+                <label htmlFor="block-clinic" className="block text-sm text-gray-700">Clinique</label>
+                <select
+                  id="block-clinic"
+                  value={blockForm.clinicId}
+                  onChange={(e) => setBlockForm({ ...blockForm, clinicId: e.target.value })}
+                  className="mt-1 border rounded p-2 w-full bg-white"
+                >
+                  <option value="">Sélectionner…</option>
+                  {clinics.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.postcode ? `(${c.postcode}` : ''}{c.city ? `${c.postcode ? ' ' : ''}${c.city}` : ''}{c.postcode ? ')' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -178,70 +220,128 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
   monday.setDate(anchor.getDate() - (day - 1));
   monday.setHours(0, 0, 0, 0);
   const days = Array.from({ length: 7 }, (_, i) => new Date(monday.getTime() + i * 24 * 60 * 60 * 1000));
-  const hours = Array.from({ length: 11 }, (_, i) => 9 + i); // 09..19
 
-  // Group items by day
-  const itemsByDay = days.map((d) =>
-    items.filter((it) => {
-      const s = new Date(it.startsAt);
-      return s.getFullYear() === d.getFullYear() && s.getMonth() === d.getMonth() && s.getDate() === d.getDate();
-    }),
-  );
+  // Time grid configuration
+  const startHour = 9;
+  const endHour = 19;
+  const slotMinutes = 30;
+  const rowsCount = ((endHour - startHour) * 60) / slotMinutes; // e.g., 20 rows for 30-min slots
+  const rowHeight = 32; // px per slot row (responsive-friendly constant)
 
   const [openItem, setOpenItem] = useState<AgendaItem | null>(null);
 
+  const gridStyle = {
+    gridTemplateColumns: '80px repeat(7, 1fr)',
+    gridTemplateRows: `repeat(${rowsCount}, ${rowHeight}px)`,
+  } as React.CSSProperties;
+
+  function computeRowIndex(d: Date): number {
+    const minutes = d.getHours() * 60 + d.getMinutes();
+    const fromStart = minutes - startHour * 60;
+    return Math.max(0, Math.floor(fromStart / slotMinutes));
+  }
+
+  function computeRowSpan(s: Date, e: Date): { start: number; end: number } {
+    const start = computeRowIndex(s) + 1; // grid rows start at 1
+    const duration = Math.max(1, Math.ceil(((e.getTime() - s.getTime()) / 60000) / slotMinutes));
+    const end = Math.min(rowsCount + 1, start + duration);
+    return { start, end };
+  }
+
   return (
     <div className="mt-4">
-      <div className="grid grid-cols-8 gap-2">
+      {/* Header with day labels */}
+      <div className="grid" style={{ gridTemplateColumns: '80px repeat(7, 1fr)' }}>
         <div />
         {days.map((d, idx) => (
-          <div key={idx} className="text-sm font-medium text-gray-700 text-center">
+          <div key={idx} className="text-sm font-medium text-gray-700 text-center py-1">
             {d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
           </div>
         ))}
       </div>
-      <div className="mt-2 grid grid-cols-8 gap-2">
-        <div className="space-y-2">
-          {hours.map((h) => (
-            <div key={h} className="text-xs text-gray-500 h-16">{String(h).padStart(2, '0')}:00</div>
-          ))}
-        </div>
-        {itemsByDay.map((list, idx) => (
-          <div key={idx} className="bg-white border rounded relative" style={{ height: hours.length * 64 }}>
-            {hours.map((h) => (
-              <div key={h} className="border-t h-16" />
-            ))}
-            <div className="absolute inset-0 p-1 space-y-1">
-              {list.map((it) => {
-                const s = new Date(it.startsAt);
-                const e = new Date(it.endsAt);
-                const startHour = s.getHours() + s.getMinutes() / 60;
-                const endHour = e.getHours() + e.getMinutes() / 60;
-                const top = ((startHour - 9) / (hours.length)) * 100; // relative
-                const height = Math.max(8, ((endHour - startHour) / (hours.length)) * 100);
-                return (
-                  <div
-                    key={it.id}
-                    className="absolute left-1 right-1 rounded bg-blue-500/80 text-white text-xs px-2 py-1 overflow-hidden cursor-pointer hover:bg-blue-600"
-                    style={{ top: `${top}%`, height: `${height}%` }}
-                    title={`${s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → ${e.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                    onClick={() => setOpenItem(it)}
-                  >
-                    {it.animal?.name || 'RDV'} — {it.status}
-                  </div>
-                );
-              })}
+
+      {/* Unified grid for time rows and day columns */}
+      <div className="mt-2 grid relative" style={gridStyle}>
+        {/* Time labels column */}
+        {Array.from({ length: rowsCount }).map((_, r) => {
+          const isHour = r % (60 / slotMinutes) === 0;
+          const labelHour = startHour + Math.floor((r * slotMinutes) / 60);
+          const label = isHour ? `${String(labelHour).padStart(2, '0')}:00` : '';
+          return (
+            <div
+              key={`t-${r}`}
+              className="border-t px-1 text-xs text-gray-500 flex items-start"
+              style={{ gridColumn: '1 / 2', gridRow: `${r + 1} / ${r + 2}` }}
+            >
+              {label}
             </div>
-          </div>
-        ))}
+          );
+        })}
+
+        {/* Day columns background cells with top borders per slot */}
+        {days.map((_, dIdx) =>
+          Array.from({ length: rowsCount }).map((_, r) => (
+            <div
+              key={`c-${dIdx}-${r}`}
+              className="border-t border-gray-200"
+              style={{ gridColumn: `${dIdx + 2} / ${dIdx + 3}`, gridRow: `${r + 1} / ${r + 2}` }}
+            />
+          )),
+        )}
+
+        {/* Events placed on the same CSS grid for perfect alignment */}
+        {items.map((it) => {
+          const s = new Date(it.startsAt);
+          const e = new Date(it.endsAt);
+          const dayIndex = (new Date(s.getFullYear(), s.getMonth(), s.getDate()).getTime() - new Date(days[0].getFullYear(), days[0].getMonth(), days[0].getDate()).getTime()) / (24 * 60 * 60 * 1000);
+          const isBlocked = it.status === 'BLOCKED';
+          if (!isBlocked) {
+            if (dayIndex < 0 || dayIndex > 6) return null; // outside current week
+            const { start, end } = computeRowSpan(s, e);
+            const content = `${it.animal?.name || 'RDV'} — ${it.status}`;
+            return (
+              <button
+                type="button"
+                key={`${it.id}-${start}`}
+                className="rounded bg-blue-500/80 text-white text-xs px-2 py-1 overflow-hidden cursor-pointer hover:bg-blue-600 text-left"
+                style={{ gridColumn: `${Number(dayIndex) + 2} / ${Number(dayIndex) + 3}`, gridRow: `${start} / ${end}`, margin: 2 }}
+                title={content}
+                onClick={() => setOpenItem(it)}
+              >
+                {content}
+              </button>
+            );
+          }
+          // For blocked periods, render on each overlapping day segment
+          const blocks: JSX.Element[] = [];
+          for (let i = 0; i < 7; i++) {
+            const dayStart = new Date(days[0].getTime() + i * 24 * 60 * 60 * 1000);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setHours(23, 59, 59, 999);
+            const overlapStart = s > dayStart ? s : dayStart;
+            const overlapEnd = e < dayEnd ? e : dayEnd;
+            if (overlapStart < overlapEnd) {
+              const seg = computeRowSpan(overlapStart, overlapEnd);
+              const content = it.reason ? `Indispo — ${it.reason}` : 'Indisponible';
+              blocks.push(
+                <div
+                  key={`${it.id}-${i}-${seg.start}`}
+                  className="rounded bg-red-200 text-red-800 text-xs px-2 py-1 overflow-hidden text-left"
+                  style={{ gridColumn: `${i + 2} / ${i + 3}`, gridRow: `${seg.start} / ${seg.end}`, margin: 2 }}
+                  title={content}
+                />
+              );
+            }
+          }
+          return blocks;
+        })}
       </div>
+
       {items.length === 0 ? (
         <div className="text-gray-600 mt-4">Aucun rendez-vous cette semaine.</div>
       ) : null}
 
-      {openItem && (
-        <AgendaItemModal item={openItem} onClose={() => setOpenItem(null)} />
-      )}
+      {openItem && <AgendaItemModal item={openItem} onClose={() => setOpenItem(null)} />}
     </div>
   );
 }
@@ -284,6 +384,14 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
                 {list.slice(0, 3).map((it) => {
                   const s = new Date(it.startsAt);
                   const label = `${s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • ${it.animal?.name || 'RDV'}`;
+                  const isBlocked = it.status === 'BLOCKED';
+                  if (isBlocked) {
+                    return (
+                      <div key={it.id} className="w-full text-left text-[11px] px-2 py-1 rounded bg-red-100 text-red-800">
+                        {it.reason ? `Indispo — ${it.reason}` : 'Indisponible'}
+                      </div>
+                    );
+                  }
                   return (
                     <button
                       key={it.id}

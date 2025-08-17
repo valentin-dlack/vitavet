@@ -7,6 +7,18 @@ import { agendaService } from '../../services/agenda.service';
 vi.mock('../../services/agenda.service', () => ({
   agendaService: {
     getMyDay: vi.fn(),
+    getMyWeek: vi.fn(),
+    getMyMonth: vi.fn(),
+    block: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/clinics.service', () => ({
+  clinicsService: {
+    search: vi.fn().mockResolvedValue([
+      { id: 'c1', name: 'Clinique A', postcode: '75001', city: 'Paris' },
+      { id: 'c2', name: 'Clinique B', postcode: '69001', city: 'Lyon' },
+    ]),
   },
 }));
 
@@ -79,9 +91,10 @@ describe('VetAgenda', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Bloquer un créneau' }));
     // Modal title
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Bloquer un créneau' })).toBeInTheDocument());
-    // Fill a clinic id
-    const input = screen.getByLabelText('Clinique ID');
-    fireEvent.change(input, { target: { value: 'c1' } });
+    // Select a clinic from populated list
+    const select = screen.getByLabelText('Clinique') as HTMLSelectElement;
+    const firstOption = Array.from(select.options).find((o) => o.value);
+    fireEvent.change(select, { target: { value: firstOption!.value } });
     fireEvent.click(screen.getByText('Bloquer'));
     await waitFor(() => expect(agendaService.block).toHaveBeenCalled());
   });
