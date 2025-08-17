@@ -261,9 +261,13 @@ describe('AppointmentsService', () => {
         },
       ]);
 
+      // Mock count method
+      (appointmentRepo.count as any) = jest.fn().mockResolvedValue(2);
+
       const res = await service.getPendingAppointments();
-      expect(res).toHaveLength(2);
-      expect(res[0]).toMatchObject({
+      expect(res.appointments).toHaveLength(2);
+      expect(res.total).toBe(2);
+      expect(res.appointments[0]).toMatchObject({
         id: 'a',
         vet: {
           id: 'v1',
@@ -279,8 +283,40 @@ describe('AppointmentsService', () => {
           email: 'alice@ex.com',
         },
       });
-      expect(res[1]).toMatchObject({ id: 'b' });
+      expect(res.appointments[1]).toMatchObject({ id: 'b' });
       expect(appointmentRepo.find).toHaveBeenCalled();
+      expect(appointmentRepo.count).toHaveBeenCalled();
+    });
+
+    it('supports pagination with limit and offset', async () => {
+      (appointmentRepo.find as any) = jest.fn().mockResolvedValue([
+        {
+          id: 'a',
+          clinicId: 'c',
+          animalId: 'an1',
+          vetUserId: 'v1',
+          status: 'PENDING',
+          startsAt: new Date(),
+          endsAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+      (appointmentRepo.count as any) = jest.fn().mockResolvedValue(50);
+
+      const res = await service.getPendingAppointments('clinic-1', 10, 20);
+
+      expect(res.appointments).toHaveLength(1);
+      expect(res.total).toBe(50);
+      expect(appointmentRepo.find).toHaveBeenCalledWith({
+        where: { status: 'PENDING', clinicId: 'clinic-1' },
+        order: { startsAt: 'ASC' },
+        skip: 20,
+        take: 10,
+      });
+      expect(appointmentRepo.count).toHaveBeenCalledWith({
+        where: { status: 'PENDING', clinicId: 'clinic-1' },
+      });
     });
   });
 

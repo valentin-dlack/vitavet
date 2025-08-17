@@ -122,13 +122,21 @@ export class AppointmentsService {
 
   async getPendingAppointments(
     clinicId?: string,
-  ): Promise<AppointmentResponse[]> {
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ appointments: AppointmentResponse[]; total: number }> {
     const where: FindOptionsWhere<Appointment> = { status: 'PENDING' };
     if (clinicId) where.clinicId = clinicId;
 
+    // Get total count for pagination
+    const total = await this.appointmentRepository.count({ where });
+
+    // Get paginated appointments
     const appointments = await this.appointmentRepository.find({
       where,
       order: { startsAt: 'ASC' },
+      skip: offset,
+      take: limit,
     });
 
     // Batch load details
@@ -149,7 +157,7 @@ export class AppointmentsService {
       ? await this.userRepository.find({ where: { id: In(ownerIds) } })
       : [];
 
-    return appointments.map((apt) => {
+    const appointmentResponses = appointments.map((apt) => {
       const animal = animals.find((a) => a.id === apt.animalId);
       const vet = vets.find((u) => u.id === apt.vetUserId);
       const owner = animal
@@ -193,6 +201,11 @@ export class AppointmentsService {
           : undefined,
       };
     });
+
+    return {
+      appointments: appointmentResponses,
+      total,
+    };
   }
 
   async confirmAppointment(id: string): Promise<AppointmentResponse> {
