@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClinicsController } from './clinics.controller';
 import { ClinicsService } from './clinics.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { GetVetsDto } from './dto/get-vets.dto';
 
 describe('ClinicsController', () => {
@@ -44,7 +46,12 @@ describe('ClinicsController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ClinicsController>(ClinicsController);
     service = module.get<ClinicsService>(ClinicsService);

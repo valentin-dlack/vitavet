@@ -56,17 +56,17 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/asv/pending" element={
-              <ProtectedRoute>
+              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC"]}>
                 <PendingAppointments />
               </ProtectedRoute>
             } />
             <Route path="/panel" element={
-              <ProtectedRoute>
+              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC"]}>
                 <RolePanel />
               </ProtectedRoute>
             } />
             <Route path="/vet/agenda" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="VET">
                 <VetAgenda />
               </ProtectedRoute>
             } />
