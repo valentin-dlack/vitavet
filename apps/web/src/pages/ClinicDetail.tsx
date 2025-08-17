@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { clinicsService, type ClinicDto } from '../services/clinics.service';
+import { clinicsService, type ClinicDetailDto } from '../services/clinics.service';
 import { VetSelector } from '../components/VetSelector';
 
 export function ClinicDetail() {
 	const { clinicId } = useParams();
 	const navigate = useNavigate();
-	const [clinic, setClinic] = useState<ClinicDto | null>(null);
+	const [clinic, setClinic] = useState<ClinicDetailDto | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedVetId, setSelectedVetId] = useState<string | undefined>(undefined);
@@ -17,10 +17,8 @@ export function ClinicDetail() {
 			setLoading(true);
 			setError(null);
 			try {
-				// reuse search to get a single clinic if available; fallback to minimal info
-				const all = await clinicsService.search('');
-				const found = all.find((c) => c.id === clinicId) || null;
-				setClinic(found);
+				const detail = await clinicsService.getById(clinicId);
+				setClinic(detail);
 			} catch (e) {
 				setError(e instanceof Error ? e.message : 'Failed to load clinic');
 			} finally {
@@ -49,6 +47,20 @@ export function ClinicDetail() {
 						<div className="mb-4">
 							<div className="font-medium">{clinic.name}</div>
 							<div className="text-gray-600">{clinic.postcode} {clinic.city}</div>
+							{clinic.addressLine1 ? <div className="text-gray-700 text-sm">{clinic.addressLine1}</div> : null}
+							{clinic.phone || clinic.email ? (
+								<div className="text-gray-700 text-sm mt-1 flex flex-col">
+									{clinic.phone ? <span>Téléphone: {clinic.phone}</span> : null}
+									{clinic.email ? <span>Email: {clinic.email}</span> : null}
+								</div>
+							) : null}
+							{clinic.services && clinic.services.length > 0 ? (
+								<div className="mt-2 flex flex-wrap gap-2">
+									{clinic.services.map((s) => (
+										<span key={s.id} className="px-2 py-1 border rounded text-xs bg-gray-50">{s.label}</span>
+									))}
+								</div>
+							) : null}
 						</div>
 					) : null}
 					{clinicId ? (

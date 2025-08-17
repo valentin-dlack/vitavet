@@ -5,7 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Clinic } from '../../clinics/entities/clinic.entity';
+import { Animal } from '../../animals/entities/animal.entity';
+import { User } from '../../users/entities/user.entity';
+import { AppointmentType } from './appointment-type.entity';
 
 export type AppointmentStatus =
   | 'PENDING'
@@ -21,14 +27,30 @@ export class Appointment {
   @Column('uuid')
   clinicId!: string;
 
+  @ManyToOne(() => Clinic, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'clinicId' })
+  clinic?: Clinic;
+
   @Column('uuid')
   animalId!: string;
+
+  @ManyToOne(() => Animal, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'animalId' })
+  animal?: Animal;
 
   @Column('uuid')
   vetUserId!: string;
 
+  @ManyToOne(() => User, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'vetUserId' })
+  vet?: User;
+
   @Column('uuid', { nullable: true })
   typeId?: string | null;
+
+  @ManyToOne(() => AppointmentType, { eager: false, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'typeId' })
+  type?: AppointmentType | null;
 
   @Column('text')
   status!: AppointmentStatus;
@@ -42,6 +64,10 @@ export class Appointment {
 
   @Column('uuid', { name: 'created_by_user_id' })
   createdByUserId!: string;
+
+  @ManyToOne(() => User, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'created_by_user_id' })
+  createdByUser?: User;
 
   @CreateDateColumn()
   createdAt!: Date;

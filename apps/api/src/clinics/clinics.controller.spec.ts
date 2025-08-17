@@ -19,6 +19,28 @@ describe('ClinicsController', () => {
             ]),
             seedDemoData: jest.fn(() => Promise.resolve()),
             getVetsByClinic: jest.fn(() => Promise.resolve([])),
+            getAllClinics: jest.fn(() =>
+              Promise.resolve([
+                {
+                  id: '1',
+                  name: 'Clinique A',
+                  city: 'Paris',
+                  postcode: '75001',
+                },
+                {
+                  id: '2',
+                  name: 'Clinique B',
+                  city: 'Paris',
+                  postcode: '75002',
+                },
+              ]),
+            ),
+            listServices: jest.fn(() =>
+              Promise.resolve([
+                { id: 's1', slug: 'consultation', label: 'Consultations' },
+                { id: 's2', slug: 'urgence', label: 'Urgences' },
+              ]),
+            ),
           },
         },
       ],
@@ -39,6 +61,52 @@ describe('ClinicsController', () => {
     const res = await controller.seedDemoData();
     expect(service.seedDemoData).toHaveBeenCalled();
     expect(res).toEqual({ message: 'Demo data seeded successfully' });
+  });
+
+  it('should list all clinics when no postcode is provided', async () => {
+    const res = await controller.search(undefined as any);
+    expect(res).toEqual([
+      { id: '1', name: 'Clinique A', city: 'Paris', postcode: '75001' },
+      { id: '2', name: 'Clinique B', city: 'Paris', postcode: '75002' },
+    ]);
+  });
+
+  it('should filter clinics by postcode and services', async () => {
+    await controller.search('75001', 'urgence,nac');
+    expect(service.searchByPostcode).toHaveBeenCalledWith('75001', [
+      'urgence',
+      'nac',
+    ]);
+  });
+
+  it('should list services', async () => {
+    const res = await controller.listServices();
+    expect(service.listServices).toHaveBeenCalled();
+    expect(res).toEqual([
+      { id: 's1', slug: 'consultation', label: 'Consultations' },
+      { id: 's2', slug: 'urgence', label: 'Urgences' },
+    ]);
+  });
+
+  it('should allow services-only filtering when postcode is empty', async () => {
+    await controller.search('', 'consultation');
+    expect(service.searchByPostcode).toHaveBeenCalledWith('', ['consultation']);
+  });
+
+  it('should return clinic details with services', async () => {
+    (service.getById as any) = jest.fn().mockResolvedValue({
+      id: 'c1',
+      name: 'X',
+      postcode: '75001',
+      city: 'Paris',
+      services: [{ id: 's1', slug: 'consultation', label: 'Consultations' }],
+    });
+    const res = await controller.getById('c1');
+    expect(service.getById).toHaveBeenCalledWith('c1');
+    expect(res).toMatchObject({
+      id: 'c1',
+      services: [{ slug: 'consultation' }],
+    });
   });
 
   describe('getVetsByClinic', () => {

@@ -2,13 +2,17 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, In } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
+import { TimeSlot } from '../slots/entities/time-slot.entity';
+import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 
 export interface AppointmentResponse {
   id: string;
@@ -21,7 +25,14 @@ export interface AppointmentResponse {
   endsAt: string;
   createdAt: string;
   vet?: { id: string; firstName: string; lastName: string; email: string };
-  animal?: { id: string; name: string; birthdate?: string | null };
+  animal?: {
+    id: string;
+    name: string;
+    birthdate?: string | null;
+    species?: string | null;
+    breed?: string | null;
+    weightKg?: number | null;
+  };
   owner?: { id: string; firstName: string; lastName: string; email: string };
 }
 
@@ -34,39 +45,67 @@ export class AppointmentsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Animal)
     private readonly animalRepository: Repository<Animal>,
+    @InjectRepository(TimeSlot)
+    private readonly timeSlotRepository: Repository<TimeSlot>,
+    @InjectRepository(UserClinicRole)
+    private readonly ucrRepository: Repository<UserClinicRole>,
   ) {}
 
   async createAppointment(
     createDto: CreateAppointmentDto,
     createdByUserId: string,
   ): Promise<AppointmentResponse> {
-    // Calculate end time (30 minutes by default)
-    const startsAt = new Date(createDto.startsAt);
-    const endsAt = new Date(startsAt.getTime() + 30 * 60 * 1000); // +30 minutes
+    const { clinicId, animalId, vetUserId, startsAt } = createDto;
 
-    // Check for conflicts (simplified - in real app would check actual slots)
-    const conflictingAppointment = await this.appointmentRepository.findOne({
-      where: {
-        vetUserId: createDto.vetUserId,
-        startsAt: startsAt,
-        status: 'CONFIRMED',
-      },
+    // Animal and clinic checks
+    const animal = await this.animalRepository.findOne({
+      where: { id: animalId },
     });
+    if (!animal) throw new NotFoundException('Animal not found');
+    if (animal.clinicId !== clinicId)
+      throw new ForbiddenException('Animal not in clinic');
 
-    if (conflictingAppointment) {
-      throw new ConflictException('Slot is already booked');
+    // If creator is OWNER in clinic, must own the animal
+    const creatorLinks = await this.ucrRepository.find({
+      where: { userId: createdByUserId, clinicId },
+    });
+    const isOwner = creatorLinks.some((l) => l.role === 'OWNER');
+    if (isOwner && animal.ownerId !== createdByUserId) {
+      throw new ForbiddenException('You can only book for your own animals');
     }
 
-    // Create appointment
-    const appointment = this.appointmentRepository.create({
+    // Vet must be in clinic
+    const vetLink = await this.ucrRepository.findOne({
+      where: { userId: vetUserId, clinicId, role: 'VET' },
+    });
+    if (!vetLink) throw new BadRequestException('Vet is not in this clinic');
+
+    const startDate = new Date(startsAt);
+    const slot = await this.timeSlotRepository.findOne({
+      where: { clinicId, vetUserId, startsAt: startDate, isAvailable: true },
+    });
+    if (!slot) throw new BadRequestException('Selected slot is not available');
+
+    const endsAt = new Date(
+      startDate.getTime() + (slot.durationMinutes || 30) * 60000,
+    );
+
+    const conflict = await this.appointmentRepository.findOne({
+      where: { vetUserId, startsAt: startDate },
+    });
+    if (conflict) throw new ConflictException('Slot is already booked');
+
+    const toSave = this.appointmentRepository.create({
       ...createDto,
-      startsAt,
+      startsAt: startDate,
       endsAt,
       status: 'PENDING' as AppointmentStatus,
       createdByUserId,
     });
 
-    const saved = await this.appointmentRepository.save(appointment);
+    const saved = await this.appointmentRepository.save(toSave);
+    slot.isAvailable = false;
+    await this.timeSlotRepository.save(slot);
 
     return {
       id: saved.id,
@@ -83,13 +122,21 @@ export class AppointmentsService {
 
   async getPendingAppointments(
     clinicId?: string,
-  ): Promise<AppointmentResponse[]> {
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ appointments: AppointmentResponse[]; total: number }> {
     const where: FindOptionsWhere<Appointment> = { status: 'PENDING' };
     if (clinicId) where.clinicId = clinicId;
 
+    // Get total count for pagination
+    const total = await this.appointmentRepository.count({ where });
+
+    // Get paginated appointments
     const appointments = await this.appointmentRepository.find({
       where,
       order: { startsAt: 'ASC' },
+      skip: offset,
+      take: limit,
     });
 
     // Batch load details
@@ -97,20 +144,20 @@ export class AppointmentsService {
     const animalIds = Array.from(new Set(appointments.map((a) => a.animalId)));
 
     const [vets, animals] = await Promise.all([
-      this.userRepository.find({ where: vetIds.map((id) => ({ id })) as any }),
-      this.animalRepository.find({
-        where: animalIds.map((id) => ({ id })) as any,
-      }),
+      vetIds.length
+        ? this.userRepository.find({ where: { id: In(vetIds) } })
+        : Promise.resolve([]),
+      animalIds.length
+        ? this.animalRepository.find({ where: { id: In(animalIds) } })
+        : Promise.resolve([]),
     ]);
 
     const ownerIds = Array.from(new Set(animals.map((an) => an.ownerId)));
     const owners = ownerIds.length
-      ? await this.userRepository.find({
-          where: ownerIds.map((id) => ({ id })) as any,
-        })
+      ? await this.userRepository.find({ where: { id: In(ownerIds) } })
       : [];
 
-    return appointments.map((apt) => {
+    const appointmentResponses = appointments.map((apt) => {
       const animal = animals.find((a) => a.id === apt.animalId);
       const vet = vets.find((u) => u.id === apt.vetUserId);
       const owner = animal
@@ -139,6 +186,9 @@ export class AppointmentsService {
               id: animal.id,
               name: animal.name,
               birthdate: animal.birthdate ?? null,
+              species: animal.species ?? null,
+              breed: animal.breed ?? null,
+              weightKg: animal.weightKg ?? null,
             }
           : undefined,
         owner: owner
@@ -151,6 +201,11 @@ export class AppointmentsService {
           : undefined,
       };
     });
+
+    return {
+      appointments: appointmentResponses,
+      total,
+    };
   }
 
   async confirmAppointment(id: string): Promise<AppointmentResponse> {

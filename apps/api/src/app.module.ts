@@ -10,6 +10,7 @@ import { databaseConfig } from './config/database.config';
 import { ClinicsModule } from './clinics/clinics.module';
 import { SlotsModule } from './slots/slots.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { AgendaModule } from './agenda/agenda.module';
 import { User } from './users/entities/user.entity';
 import { Clinic } from './clinics/entities/clinic.entity';
 import { UserClinicRole } from './users/entities/user-clinic-role.entity';
@@ -21,6 +22,8 @@ import { ReminderRule } from './reminders/entities/reminder-rule.entity';
 import { ReminderInstance } from './reminders/entities/reminder-instance.entity';
 import { NotificationLog } from './notifications/entities/notification-log.entity';
 import { TimeSlot } from './slots/entities/time-slot.entity';
+import { AnimalsModule } from './animals/animals.module';
+import { Service as ClinicService } from './clinics/entities/service.entity';
 
 @Module({
   imports: [
@@ -29,6 +32,7 @@ import { TimeSlot } from './slots/entities/time-slot.entity';
       entities: [
         User,
         Clinic,
+        ClinicService,
         UserClinicRole,
         Animal,
         AppointmentType,
@@ -52,6 +56,8 @@ import { TimeSlot } from './slots/entities/time-slot.entity';
     ClinicsModule,
     SlotsModule,
     AppointmentsModule,
+    AnimalsModule,
+    AgendaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

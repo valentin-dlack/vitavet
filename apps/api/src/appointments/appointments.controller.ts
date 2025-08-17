@@ -6,6 +6,8 @@ import {
   Param,
   Patch,
   UseGuards,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AppointmentsService } from './appointments.service';
@@ -45,8 +47,27 @@ export class AppointmentsController {
 
   @Get('pending')
   @Roles('ASV', 'VET', 'ADMIN_CLINIC')
-  async getPendingAppointments() {
-    return this.appointmentsService.getPendingAppointments();
+  async getPendingAppointments(
+    @Query('clinicId') clinicId?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const offsetNum = offset ? parseInt(offset, 10) : 0;
+
+    // Validate pagination parameters
+    if (limitNum < 1 || limitNum > 100) {
+      throw new BadRequestException('Limit must be between 1 and 100');
+    }
+    if (offsetNum < 0) {
+      throw new BadRequestException('Offset must be non-negative');
+    }
+
+    return this.appointmentsService.getPendingAppointments(
+      clinicId,
+      limitNum,
+      offsetNum,
+    );
   }
 
   @Patch(':id/confirm')

@@ -88,7 +88,7 @@ async function bootstrap() {
       }
     }
 
-    // Animals for owner
+    // Animals for owner (enriched fields)
     let animal1 = await animalRepo.findOne({
       where: { name: 'Milo', clinicId: clinic.id },
     });
@@ -98,6 +98,15 @@ async function bootstrap() {
           name: 'Milo',
           clinicId: clinic.id,
           ownerId: owner.id,
+          species: 'chien',
+          breed: 'Labrador',
+          sex: 'MALE',
+          isSterilized: true,
+          color: 'noir',
+          chipId: '250269604000000',
+          weightKg: 28.5,
+          heightCm: 55,
+          isNac: false,
         }),
       );
     }
@@ -111,17 +120,34 @@ async function bootstrap() {
           name: 'Luna',
           clinicId: clinic.id,
           ownerId: owner.id,
+          species: 'chat',
+          breed: 'Européen',
+          sex: 'FEMALE',
+          isSterilized: true,
+          color: 'tigré',
+          chipId: '250269604000001',
+          weightKg: 4.2,
+          heightCm: 25,
+          isNac: false,
         }),
       );
     }
 
-    // Appointment type
+    // Appointment types
     let consult30 = await aptTypeRepo.findOne({
       where: { label: 'Consultation 30m' },
     });
     if (!consult30) {
       consult30 = await aptTypeRepo.save(
         aptTypeRepo.create({ label: 'Consultation 30m', durationMin: 30 }),
+      );
+    }
+    let consult60 = await aptTypeRepo.findOne({
+      where: { label: 'Consultation 60m' },
+    });
+    if (!consult60) {
+      consult60 = await aptTypeRepo.save(
+        aptTypeRepo.create({ label: 'Consultation 60m', durationMin: 60 }),
       );
     }
 
@@ -141,47 +167,51 @@ async function bootstrap() {
       );
     }
 
-    // Appointments sample
+    // Random appointments around today (±5 days)
     const now = new Date();
-    const today10 = new Date(now);
-    today10.setHours(10, 0, 0, 0);
-    const today1030 = new Date(now);
-    today1030.setHours(10, 30, 0, 0);
+    const vets = [vet1, vet2];
+    const animals = [animal1, animal2];
+    const creators = [owner, asv];
+    const statuses: ('PENDING' | 'CONFIRMED')[] = ['PENDING', 'CONFIRMED'];
+    const types = [consult30, consult60];
 
-    const pendingApt = await aptRepo.findOne({
-      where: { clinicId: clinic.id, animalId: animal1.id, startsAt: today10 },
-    });
-    if (!pendingApt) {
-      await aptRepo.save(
-        aptRepo.create({
-          clinicId: clinic.id,
-          animalId: animal1.id,
-          vetUserId: vet1.id,
-          typeId: consult30.id,
-          status: 'PENDING',
-          startsAt: today10,
-          endsAt: new Date(today10.getTime() + 30 * 60 * 1000),
-          createdByUserId: asv.id,
-        }),
-      );
-    }
+    for (let d = -5; d <= 5; d++) {
+      const base = new Date(now);
+      base.setDate(now.getDate() + d);
+      // Generate 3 random appointments per day
+      for (let k = 0; k < 3; k++) {
+        const startHour = 9 + Math.floor(Math.random() * 8); // 9..16
+        const startMin = Math.random() < 0.5 ? 0 : 30; // :00 or :30
+        const startsAt = new Date(base);
+        startsAt.setHours(startHour, startMin, 0, 0);
 
-    const confirmedApt = await aptRepo.findOne({
-      where: { clinicId: clinic.id, animalId: animal2.id, startsAt: today1030 },
-    });
-    if (!confirmedApt) {
-      await aptRepo.save(
-        aptRepo.create({
-          clinicId: clinic.id,
-          animalId: animal2.id,
-          vetUserId: vet2.id,
-          typeId: consult30.id,
-          status: 'CONFIRMED',
-          startsAt: today1030,
-          endsAt: new Date(today1030.getTime() + 30 * 60 * 1000),
-          createdByUserId: owner.id,
-        }),
-      );
+        const type = types[Math.floor(Math.random() * types.length)];
+        const duration = type.durationMin;
+        const endsAt = new Date(startsAt.getTime() + duration * 60 * 1000);
+
+        const animal = animals[Math.floor(Math.random() * animals.length)];
+        const vet = vets[Math.floor(Math.random() * vets.length)];
+        const createdBy = creators[Math.floor(Math.random() * creators.length)];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+        const exists = await aptRepo.findOne({
+          where: { clinicId: clinic.id, startsAt, vetUserId: vet.id },
+        });
+        if (!exists) {
+          await aptRepo.save(
+            aptRepo.create({
+              clinicId: clinic.id,
+              animalId: animal.id,
+              vetUserId: vet.id,
+              typeId: type.id,
+              status,
+              startsAt,
+              endsAt,
+              createdByUserId: createdBy.id,
+            }),
+          );
+        }
+      }
     }
 
     // Reminder instance example J-7

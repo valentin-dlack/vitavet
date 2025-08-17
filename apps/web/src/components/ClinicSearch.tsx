@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useInRouterContext } from 'react-router-dom';
-import { clinicsService, type ClinicDto } from '../services/clinics.service';
+import { clinicsService, type ClinicDto, type ServiceDto } from '../services/clinics.service';
 
 export function ClinicSearch() {
   const [postcode, setPostcode] = useState('');
   const [results, setResults] = useState<ClinicDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [services, setServices] = useState<ServiceDto[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const inRouter = useInRouterContext();
 
   const onSearch = async (e: React.FormEvent) => {
@@ -14,13 +16,33 @@ export function ClinicSearch() {
     setError(null);
     setLoading(true);
     try {
-      const data = await clinicsService.search(postcode.trim());
+      const data = await clinicsService.search(postcode.trim(), selectedServices);
       setResults(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
+  };
+
+  // load services once
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const list = await clinicsService.listServices();
+        if (isMounted) setServices(list);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const toggleService = (slug: string) => {
+    setSelectedServices((prev) => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
   };
 
   return (
@@ -41,6 +63,24 @@ export function ClinicSearch() {
             {loading ? 'Recherche...' : 'Rechercher'}
           </button>
         </div>
+        {services.length > 0 && (
+          <div className="mt-3">
+            <div className="text-sm text-gray-700 mb-1">Services</div>
+            <div className="flex flex-wrap gap-2">
+              {services.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => toggleService(s.slug)}
+                  className={`px-2 py-1 border rounded text-sm ${selectedServices.includes(s.slug) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'}`}
+                  aria-pressed={selectedServices.includes(s.slug)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {error ? (
           <p id="postcode-error" className="text-red-600 text-sm mt-1" role="alert">{error}</p>
         ) : null}

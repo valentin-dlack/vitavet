@@ -1,19 +1,18 @@
-import { Controller, Get, Query, Post } from '@nestjs/common';
-import { SlotsService, AvailableSlot } from './slots.service';
+import { Controller, Get, Query } from '@nestjs/common';
 import { GetSlotsDto } from './dto/get-slots.dto';
+import { AvailableSlot, SlotsService } from './slots.service';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { UseGuards } from '@nestjs/common';
 
 @Controller('slots')
+@UseGuards(ThrottlerGuard)
 export class SlotsController {
   constructor(private readonly slotsService: SlotsService) {}
 
   @Get()
-  getAvailableSlots(@Query() query: GetSlotsDto): AvailableSlot[] {
+  async getAvailableSlots(
+    @Query() query: GetSlotsDto,
+  ): Promise<AvailableSlot[]> {
     return this.slotsService.getAvailableSlots(query);
-  }
-
-  @Post('seed')
-  async seedDemoSlots() {
-    await this.slotsService.seedDemoSlots();
-    return { message: 'Demo slots seeded successfully' };
   }
 }
