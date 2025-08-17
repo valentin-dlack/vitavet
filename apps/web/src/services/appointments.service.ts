@@ -18,7 +18,7 @@ export interface AppointmentResponse {
 	createdAt: string;
 	message?: string;
 	vet?: { id: string; firstName: string; lastName: string; email: string };
-	animal?: { id: string; name: string; birthdate?: string | null };
+	animal?: { id: string; name: string; birthdate?: string | null; species?: string | null; breed?: string | null; weightKg?: number | null };
 	owner?: { id: string; firstName: string; lastName: string; email: string };
 }
 

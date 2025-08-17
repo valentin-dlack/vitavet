@@ -4,7 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Clinic } from '../../clinics/entities/clinic.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('time_slots')
 export class TimeSlot {
@@ -14,8 +18,16 @@ export class TimeSlot {
   @Column()
   clinicId: string;
 
+  @ManyToOne(() => Clinic, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'clinicId' })
+  clinic?: Clinic;
+
   @Column({ nullable: true })
   vetUserId?: string;
+
+  @ManyToOne(() => User, { eager: false, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'vetUserId' })
+  vet?: User | null;
 
   @Column({ type: 'timestamptz' })
   startsAt: Date;

@@ -74,6 +74,9 @@ export function PendingAppointments() {
 										<div className="border rounded p-3">
 											<div className="text-xs uppercase text-gray-500">Animal</div>
 											<div className="mt-1 text-sm text-gray-900">{a.animal?.name || '—'}</div>
+											<div className="text-xs text-gray-600">Espèce: {a.animal?.species || '—'}</div>
+											<div className="text-xs text-gray-600">Race: {a.animal?.breed || '—'}</div>
+											<div className="text-xs text-gray-600">Poids: {a.animal?.weightKg != null ? `${a.animal.weightKg} kg` : '—'}</div>
 											<div className="text-xs text-gray-600">{a.animal?.birthdate ? `Né(e) le ${new Date(a.animal.birthdate).toLocaleDateString('fr-FR')}` : ''}</div>
 										</div>
 										<div className="border rounded p-3">

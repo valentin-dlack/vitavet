@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { Clinic } from './entities/clinic.entity';
 import { NotFoundException } from '@nestjs/common';
+import { User } from '../users/entities/user.entity';
+import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { Service as ClinicServiceEntity } from './entities/service.entity';
 
 export interface Vet {
   id: string;
@@ -17,16 +20,52 @@ export class ClinicsService {
   constructor(
     @InjectRepository(Clinic)
     private readonly clinicRepository: Repository<Clinic>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(UserClinicRole)
+    private readonly ucrRepository: Repository<UserClinicRole>,
+    @InjectRepository(ClinicServiceEntity)
+    private readonly serviceRepository: Repository<ClinicServiceEntity>,
   ) {}
 
-  async searchByPostcode(postcode: string): Promise<Clinic[]> {
-    if (!postcode) return [];
-    // Fast LIKE( prefix ) on indexed column
-    return this.clinicRepository.find({
-      where: { postcode: ILike(`${postcode}%`) },
+  async searchByPostcode(
+    postcode: string,
+    serviceSlugs?: string[],
+  ): Promise<Clinic[]> {
+    if (!postcode && !serviceSlugs?.length) return [];
+
+    const where: Partial<Record<keyof Clinic, unknown>> = {};
+    if (postcode) where.postcode = ILike(`${postcode}%`);
+
+    // Base query
+    let clinics = await this.clinicRepository.find({
+      where: where as any,
       order: { city: 'ASC', name: 'ASC' },
-      take: 25,
+      take: 50,
     });
+
+    if (serviceSlugs && serviceSlugs.length > 0) {
+      const services = await this.serviceRepository.find({
+        where: { slug: In(serviceSlugs) },
+      });
+      if (services.length === 0) return [];
+      const serviceIds = new Set(services.map((s) => s.id));
+      // OR logic: clinic has at least one of the services
+      const clinicIdsWithServices = new Set<string>();
+      // Load clinics with relations in batches (simple approach)
+      const withRelations = await this.clinicRepository.find({
+        relations: ['services'],
+        where: where as any,
+      });
+      for (const c of withRelations) {
+        if (c.services?.some((srv) => serviceIds.has(srv.id))) {
+          clinicIdsWithServices.add(c.id);
+        }
+      }
+      clinics = clinics.filter((c) => clinicIdsWithServices.has(c.id));
+    }
+
+    return clinics;
   }
 
   async getAllClinics(): Promise<Clinic[]> {
@@ -36,17 +75,56 @@ export class ClinicsService {
     });
   }
 
+  async getById(id: string): Promise<Clinic | null> {
+    return this.clinicRepository.findOne({
+      where: { id },
+      relations: ['services'],
+    });
+  }
+
   async seedDemoData(): Promise<void> {
     const demoClinics = [
       {
         name: 'Clinique Vétérinaire du Marais',
         city: 'Paris',
         postcode: '75003',
+        addressLine1: '12 Rue des Filles du Calvaire',
+        country: 'France',
+        phone: '+33 1 23 45 67 89',
+        email: 'marais@vitavet.fr',
+        website: 'https://marais.vitavet.fr',
+        latitude: 48.8636,
+        longitude: 2.3645,
+        openingHours: {
+          mon: '09:00-19:00',
+          tue: '09:00-19:00',
+          wed: '09:00-19:00',
+          thu: '09:00-19:00',
+          fri: '09:00-19:00',
+          sat: '10:00-16:00',
+          sun: null,
+        },
       },
       {
         name: 'Centre Vétérinaire Saint-Germain',
         city: 'Paris',
         postcode: '75006',
+        addressLine1: '5 Boulevard Saint-Germain',
+        country: 'France',
+        phone: '+33 1 98 76 54 32',
+        email: 'saintgermain@vitavet.fr',
+        website: 'https://stgermain.vitavet.fr',
+        latitude: 48.853,
+        longitude: 2.34,
+        openingHours: {
+          mon: '08:30-18:30',
+          tue: '08:30-18:30',
+          wed: '08:30-18:30',
+          thu: '08:30-18:30',
+          fri: '08:30-18:30',
+          sat: null,
+          sun: null,
+        },
       },
       {
         name: 'Clinique Animale de la Bastille',
@@ -112,43 +190,73 @@ export class ClinicsService {
         await this.clinicRepository.save(clinic);
       }
     }
+
+    // Seed services and attach to clinics
+    const defaultServices = [
+      { slug: 'consultation', label: 'Consultations' },
+      { slug: 'urgence', label: 'Urgences' },
+      { slug: 'imagerie', label: 'Imagerie' },
+      { slug: 'chirurgie', label: 'Chirurgie' },
+      { slug: 'nac', label: 'NAC' },
+      { slug: 'hospitalisation', label: 'Hospitalisation' },
+      { slug: 'dentisterie', label: 'Dentisterie' },
+      { slug: 'dermatologie', label: 'Dermatologie' },
+    ];
+    const serviceEntities: Record<string, ClinicServiceEntity> = {};
+    for (const s of defaultServices) {
+      let ent = await this.serviceRepository.findOne({
+        where: { slug: s.slug },
+      });
+      if (!ent)
+        ent = await this.serviceRepository.save(
+          this.serviceRepository.create(s),
+        );
+      serviceEntities[s.slug] = ent;
+    }
+
+    const allClinics = await this.clinicRepository.find({
+      relations: ['services'],
+    });
+    for (const c of allClinics) {
+      const assigns = ['consultation'];
+      if (c.city === 'Paris') assigns.push('urgence', 'imagerie');
+      if (c.city === 'Lyon') assigns.push('chirurgie');
+      if (!c.services) c.services = [];
+      for (const slug of assigns) {
+        const s = serviceEntities[slug];
+        if (s && !c.services.find((x) => x.id === s.id)) {
+          c.services.push(s);
+        }
+      }
+      await this.clinicRepository.save(c);
+    }
+  }
+
+  async listServices(): Promise<ClinicServiceEntity[]> {
+    return this.serviceRepository.find({ order: { label: 'ASC' } });
   }
 
   async getVetsByClinic(clinicId: string): Promise<Vet[]> {
-    // Vérifier que la clinique existe
     const clinic = await this.clinicRepository.findOne({
       where: { id: clinicId },
     });
-
-    if (!clinic) {
+    if (!clinic)
       throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
-    }
 
-    // Données fictives de vétérinaires pour la démo
-    const mockVets: Vet[] = [
-      {
-        id: '550e8400-e29b-41d4-a716-446655440001',
-        firstName: 'Dr. Martin',
-        lastName: 'Dubois',
-        email: 'martin.dubois@vitavet.fr',
-        specialty: 'Chirurgie générale',
-      },
-      {
-        id: '550e8400-e29b-41d4-a716-446655440002',
-        firstName: 'Dr. Sophie',
-        lastName: 'Leroy',
-        email: 'sophie.leroy@vitavet.fr',
-        specialty: 'Dermatologie',
-      },
-      {
-        id: '550e8400-e29b-41d4-a716-446655440003',
-        firstName: 'Dr. Pierre',
-        lastName: 'Moreau',
-        email: 'pierre.moreau@vitavet.fr',
-        specialty: 'Cardiologie',
-      },
-    ];
+    const links = await this.ucrRepository.find({
+      where: { clinicId, role: 'VET' },
+    });
+    const vetIds = links.map((l) => l.userId);
+    if (vetIds.length === 0) return [];
 
-    return mockVets;
+    const vets = await this.userRepository.find({
+      where: { id: In(vetIds) },
+    });
+    return vets.map((u) => ({
+      id: u.id,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      email: u.email,
+    }));
   }
 }

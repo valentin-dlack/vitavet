@@ -7,6 +7,16 @@ import { appointmentsService } from '../../services/appointments.service';
 vi.mock('../../services/appointments.service');
 const mockAppointmentsService = vi.mocked(appointmentsService);
 
+// Mock animals service
+vi.mock('../../services/animals.service', () => ({
+	animalsService: {
+		getMyAnimals: vi.fn().mockResolvedValue([
+			{ id: 'animal-1', clinicId: 'clinic-1', ownerId: 'owner-1', name: 'Milo', birthdate: null },
+			{ id: 'animal-2', clinicId: 'clinic-1', ownerId: 'owner-1', name: 'Luna', birthdate: null },
+		]),
+	},
+}));
+
 describe('AppointmentModal', () => {
 	const mockSlot = {
 		id: 'slot-1',
@@ -42,8 +52,11 @@ describe('AppointmentModal', () => {
 		expect(screen.queryByText('Confirmer le rendez-vous')).not.toBeInTheDocument();
 	});
 
-	it('should call onClose when cancel button is clicked', () => {
+	it('should call onClose when cancel button is clicked', async () => {
 		render(<AppointmentModal {...mockProps} />);
+
+		// ensure animals loaded
+		await screen.findByLabelText('Animal');
 
 		fireEvent.click(screen.getByText('Annuler'));
 
@@ -66,12 +79,16 @@ describe('AppointmentModal', () => {
 
 		render(<AppointmentModal {...mockProps} />);
 
+		// select first animal
+		await screen.findByLabelText('Animal');
+		fireEvent.change(screen.getByLabelText('Animal'), { target: { value: 'animal-1' } });
+
 		fireEvent.click(screen.getByText('Confirmer'));
 
 		await waitFor(() => {
 			expect(mockAppointmentsService.createAppointment).toHaveBeenCalledWith({
 				clinicId: 'clinic-1',
-				animalId: '550e8400-e29b-41d4-a716-446655440001', // Mock animal ID
+				animalId: 'animal-1',
 				vetUserId: 'vet-1',
 				startsAt: '2024-01-15T10:00:00Z',
 			});
@@ -86,6 +103,9 @@ describe('AppointmentModal', () => {
 
 		render(<AppointmentModal {...mockProps} />);
 
+		await screen.findByLabelText('Animal');
+		fireEvent.change(screen.getByLabelText('Animal'), { target: { value: 'animal-1' } });
+
 		fireEvent.click(screen.getByText('Confirmer'));
 
 		await waitFor(() => {
@@ -96,9 +116,12 @@ describe('AppointmentModal', () => {
 		expect(mockProps.onClose).not.toHaveBeenCalled();
 	});
 
-	it('should show error when vet is not selected', () => {
+	it('should show error when vet is not selected', async () => {
 		const slotWithoutVet = { ...mockSlot, vetUserId: undefined };
 		render(<AppointmentModal {...mockProps} slot={slotWithoutVet} />);
+
+		await screen.findByLabelText('Animal');
+		fireEvent.change(screen.getByLabelText('Animal'), { target: { value: 'animal-1' } });
 
 		fireEvent.click(screen.getByText('Confirmer'));
 
@@ -116,6 +139,9 @@ describe('AppointmentModal', () => {
 		mockAppointmentsService.createAppointment = vi.fn().mockReturnValue(promise);
 
 		render(<AppointmentModal {...mockProps} />);
+
+		await screen.findByLabelText('Animal');
+		fireEvent.change(screen.getByLabelText('Animal'), { target: { value: 'animal-1' } });
 
 		fireEvent.click(screen.getByText('Confirmer'));
 

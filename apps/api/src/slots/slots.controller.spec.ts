@@ -46,13 +46,13 @@ describe('SlotsController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should return available slots', () => {
+  it('should return available slots', async () => {
     const query: GetSlotsDto = {
       clinicId: '550e8400-e29b-41d4-a716-446655440000',
       date: '2024-01-15',
     };
 
-    const result = controller.getAvailableSlots(query);
+    const result = await controller.getAvailableSlots(query);
 
     expect(service.getAvailableSlots).toHaveBeenCalledWith(query);
     expect(result).toEqual(mockSlots);

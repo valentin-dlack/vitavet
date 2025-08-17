@@ -6,12 +6,15 @@ import { Appointment } from './entities/appointment.entity';
 import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { TimeSlot } from '../slots/entities/time-slot.entity';
+import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 
 describe('AppointmentsService', () => {
   let service: AppointmentsService;
   let appointmentRepo: Repository<Appointment>;
   let userRepo: Repository<User>;
   let animalRepo: Repository<Animal>;
+  // Repositories obtained via DI, not needed as local variables in tests
 
   const appointmentRepoMock = {
     findOne: jest.fn(),
@@ -26,7 +29,18 @@ describe('AppointmentsService', () => {
 
   const animalRepoMock = {
     find: jest.fn(),
+    findOne: jest.fn(),
   } as unknown as Repository<Animal>;
+
+  const timeSlotRepoMock: Partial<Repository<TimeSlot>> = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+  } as unknown as Repository<TimeSlot>;
+
+  const ucrRepoMock: Partial<Repository<UserClinicRole>> = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+  } as unknown as Repository<UserClinicRole>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -39,6 +53,8 @@ describe('AppointmentsService', () => {
         },
         { provide: getRepositoryToken(User), useValue: userRepoMock },
         { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
+        { provide: getRepositoryToken(TimeSlot), useValue: timeSlotRepoMock },
+        { provide: getRepositoryToken(UserClinicRole), useValue: ucrRepoMock },
       ],
     }).compile();
 
@@ -66,6 +82,26 @@ describe('AppointmentsService', () => {
         typeId: undefined,
       };
 
+      (animalRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        id: 'animal-1',
+        clinicId: 'clinic-1',
+        ownerId: 'owner-1',
+      });
+      (ucrRepoMock.find as any) = jest
+        .fn()
+        .mockResolvedValue([
+          { userId: 'creator-1', clinicId: 'clinic-1', role: 'ASV' },
+        ]);
+      (ucrRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        userId: 'vet-1',
+        clinicId: 'clinic-1',
+        role: 'VET',
+      });
+      (timeSlotRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        id: 'slot-1',
+        durationMinutes: 30,
+        isAvailable: true,
+      });
       (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(null);
       const created: Partial<Appointment> = {
         ...dto,
@@ -81,6 +117,7 @@ describe('AppointmentsService', () => {
         createdAt: new Date('2024-01-10T10:00:00.000Z'),
       } as unknown as Appointment;
       (appointmentRepo.save as any) = jest.fn().mockResolvedValue(saved);
+      (timeSlotRepoMock.save as any) = jest.fn().mockResolvedValue({});
 
       const res = await service.createAppointment(dto as any, 'creator-1');
 
@@ -100,6 +137,26 @@ describe('AppointmentsService', () => {
     });
 
     it('throws ConflictException when slot already booked', async () => {
+      (animalRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        id: 'animal-1',
+        clinicId: 'clinic-1',
+        ownerId: 'creator-1',
+      });
+      (ucrRepoMock.find as any) = jest
+        .fn()
+        .mockResolvedValue([
+          { userId: 'creator-1', clinicId: 'clinic-1', role: 'OWNER' },
+        ]);
+      (ucrRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        userId: 'vet-1',
+        clinicId: 'clinic-1',
+        role: 'VET',
+      });
+      (timeSlotRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+        id: 'slot-1',
+        durationMinutes: 30,
+        isAvailable: true,
+      });
       (appointmentRepo.findOne as any) = jest
         .fn()
         .mockResolvedValue({ id: 'conflict' });
@@ -153,7 +210,13 @@ describe('AppointmentsService', () => {
       (userRepo.find as any) = jest
         .fn()
         .mockImplementation(({ where }: any) => {
-          const ids = (where as any[]).map((w: { id: string }) => w.id);
+          let ids: string[] = [];
+          if (Array.isArray(where)) {
+            ids = where.map((w: { id: string }) => w.id);
+          } else if (where?.id?._value && Array.isArray(where.id._value)) {
+            // When using TypeORM In([...]) the operator stores values in _value
+            ids = where.id._value as string[];
+          }
           // if includes vets ids
           if (ids.includes('v1') || ids.includes('v2')) {
             return Promise.resolve([

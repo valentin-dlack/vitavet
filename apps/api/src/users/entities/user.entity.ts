@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
+import { Appointment } from '../../appointments/entities/appointment.entity';
+import { Animal } from '../../animals/entities/animal.entity';
 
 @Entity('users')
 export class User {
@@ -37,4 +40,13 @@ export class User {
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`;
   }
+
+  @OneToMany(() => Appointment, (apt) => apt.vet)
+  vetAppointments?: Appointment[];
+
+  @OneToMany(() => Appointment, (apt) => apt.createdByUser)
+  createdAppointments?: Appointment[];
+
+  @OneToMany(() => Animal, (a) => a.owner)
+  animals?: Animal[];
 }
