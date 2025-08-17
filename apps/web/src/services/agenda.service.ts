@@ -15,6 +15,18 @@ class AgendaService {
     const { httpService } = await import('./http.service');
     return httpService.get<AgendaItem[]>(endpoint);
   }
+
+  async getMyWeek(date: string): Promise<AgendaItem[]> {
+    const endpoint = `/agenda/me?range=week&date=${encodeURIComponent(date)}`;
+    const { httpService } = await import('./http.service');
+    return httpService.get<AgendaItem[]>(endpoint);
+  }
+
+  async getMyMonth(date: string): Promise<AgendaItem[]> {
+    const endpoint = `/agenda/me?range=month&date=${encodeURIComponent(date)}`;
+    const { httpService } = await import('./http.service');
+    return httpService.get<AgendaItem[]>(endpoint);
+  }
 }
 
 export const agendaService = new AgendaService();

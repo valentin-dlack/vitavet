@@ -51,8 +51,10 @@ describe('VetAgenda', () => {
     });
   });
 
-  it('navigates dates with buttons', async () => {
+  it('navigates dates with buttons and switches views', async () => {
     (agendaService.getMyDay as any).mockResolvedValue([]);
+    (agendaService.getMyWeek as any) = vi.fn().mockResolvedValue([]);
+    (agendaService.getMyMonth as any) = vi.fn().mockResolvedValue([]);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
@@ -61,6 +63,10 @@ describe('VetAgenda', () => {
     fireEvent.click(screen.getByText('← Précédent'));
     fireEvent.click(screen.getByText('Suivant →'));
     expect(agendaService.getMyDay).toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Semaine'));
+    await waitFor(() => expect(agendaService.getMyWeek).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Mois'));
+    await waitFor(() => expect(agendaService.getMyMonth).toHaveBeenCalled());
   });
 });
 

@@ -16,7 +16,7 @@ describe('AgendaController', () => {
       providers: [
         {
           provide: AgendaService,
-          useValue: { getVetDayAgenda: jest.fn().mockResolvedValue([]) },
+          useValue: { getVetDayAgenda: jest.fn().mockResolvedValue([]), getVetRangeAgenda: jest.fn().mockResolvedValue([]) },
         },
       ],
     })
@@ -42,6 +42,26 @@ describe('AgendaController', () => {
       '2024-01-10',
     );
     expect(service.getVetDayAgenda).toHaveBeenCalled();
+    expect(res).toEqual([]);
+  });
+
+  it('getMyAgenda week delegates to range service', async () => {
+    const res = await controller.getMyAgenda(
+      { id: 'vet1' } as User,
+      '2024-01-10',
+      'week'
+    );
+    expect(service.getVetRangeAgenda).toHaveBeenCalled();
+    expect(res).toEqual([]);
+  });
+
+  it('getMyAgenda month delegates to range service', async () => {
+    const res = await controller.getMyAgenda(
+      { id: 'vet1' } as User,
+      '2024-01-10',
+      'month'
+    );
+    expect(service.getVetRangeAgenda).toHaveBeenCalled();
     expect(res).toEqual([]);
   });
 });

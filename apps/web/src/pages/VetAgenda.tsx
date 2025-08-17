@@ -10,16 +10,17 @@ export function VetAgenda() {
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<'day' | 'week' | 'month'>('day');
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    agendaService
-      .getMyDay(date)
+    const fetcher = range === 'day' ? agendaService.getMyDay : range === 'week' ? agendaService.getMyWeek : agendaService.getMyMonth;
+    fetcher.call(agendaService, date)
       .then(setItems)
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agenda'))
       .finally(() => setLoading(false));
-  }, [date]);
+  }, [date, range]);
 
   const byHour = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
@@ -34,13 +35,18 @@ export function VetAgenda() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-4xl px-4">
-        <h1 className="text-2xl font-semibold mb-4">📅 Agenda du jour</h1>
+        <h1 className="text-2xl font-semibold mb-4">📅 Agenda {range === 'day' ? 'du jour' : range === 'week' ? 'de la semaine' : 'du mois'}</h1>
         <div className="flex items-end gap-3 mb-4">
           <div>
             <label htmlFor="date" className="block text-sm text-gray-700">Date</label>
             <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 border rounded p-2" />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-white border rounded p-1">
+              <button className={`px-2 py-1 rounded ${range==='day'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('day')}>Jour</button>
+              <button className={`px-2 py-1 rounded ${range==='week'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('week')}>Semaine</button>
+              <button className={`px-2 py-1 rounded ${range==='month'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('month')}>Mois</button>
+            </div>
             <button
               type="button"
               className="px-3 py-2 border rounded"

@@ -81,4 +81,19 @@ describe('AgendaService', () => {
       owner: { firstName: 'Olivia' },
     });
   });
+
+  it('returns mapped agenda items within a week range', async () => {
+    const start = new Date('2024-01-08T00:00:00.000Z');
+    const end = new Date('2024-01-14T23:59:59.999Z');
+    const appt = {
+      id: 'apt2', vetUserId: 'vet1', animalId: 'an2', status: 'PENDING',
+      startsAt: new Date('2024-01-10T11:00:00.000Z'), endsAt: new Date('2024-01-10T11:30:00.000Z'),
+    } as any;
+    (aptRepoMock.find as any) = jest.fn().mockResolvedValue([appt]);
+    (animalRepoMock.find as any) = jest.fn().mockResolvedValue([{ id: 'an2', name: 'Luna', ownerId: 'u2' }]);
+    (userRepoMock.find as any) = jest.fn().mockResolvedValue([{ id: 'u2', firstName: 'Leo', lastName: 'L', email: 'l@ex.com' }]);
+    const res = await service.getVetRangeAgenda('vet1', start, end);
+    expect(res).toHaveLength(1);
+    expect(res[0]).toMatchObject({ id: 'apt2', owner: { firstName: 'Leo' } });
+  });
 });

@@ -90,4 +90,60 @@ export class AgendaService {
       } as AgendaItem;
     });
   }
+
+  async getVetRangeAgenda(
+    vetUserId: string,
+    start: Date,
+    end: Date,
+  ): Promise<AgendaItem[]> {
+    const appts = await this.appointmentRepository.find({
+      where: { vetUserId, startsAt: Between(start, end) },
+      order: { startsAt: 'ASC' },
+    });
+
+    if (appts.length === 0) return [];
+
+    const animalIds = Array.from(new Set(appts.map((a) => a.animalId)));
+    const animals = animalIds.length
+      ? await this.animalRepository.find({
+          where: { id: In(animalIds) },
+        })
+      : [];
+
+    const ownerIds = Array.from(new Set(animals.map((a) => a.ownerId)));
+    const owners = ownerIds.length
+      ? await this.userRepository.find({
+          where: { id: In(ownerIds) },
+        })
+      : [];
+
+    return appts.map((a) => {
+      const animal = animals.find((an) => an.id === a.animalId);
+      const owner = animal ? owners.find((u) => u.id === animal.ownerId) : undefined;
+      return {
+        id: a.id,
+        startsAt: a.startsAt.toISOString(),
+        endsAt: a.endsAt.toISOString(),
+        status: a.status,
+        animal: animal
+          ? {
+              id: animal.id,
+              name: animal.name,
+              birthdate: animal.birthdate ?? null,
+              species: animal.species ?? null,
+              breed: animal.breed ?? null,
+              weightKg: animal.weightKg ?? null,
+            }
+          : undefined,
+        owner: owner
+          ? {
+              id: owner.id,
+              firstName: owner.firstName,
+              lastName: owner.lastName,
+              email: owner.email,
+            }
+          : undefined,
+      } as AgendaItem;
+    });
+  }
 }
