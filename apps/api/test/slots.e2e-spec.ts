@@ -103,8 +103,6 @@ describe('SlotsController (e2e)', () => {
 
   // This test is now redundant as we seed slots in beforeAll
   it('/api/slots/seed (POST) - should be disabled or protected in E2E', () => {
-    return request(app.getHttpServer())
-      .post('/api/slots/seed')
-      .expect(404); // or 403 if protected
+    return request(app.getHttpServer()).post('/api/slots/seed').expect(404); // or 403 if protected
   });
 });
