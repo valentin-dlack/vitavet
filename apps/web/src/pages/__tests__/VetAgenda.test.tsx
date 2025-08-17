@@ -66,7 +66,8 @@ describe('VetAgenda', () => {
   it('navigates dates with buttons and switches views', async () => {
     (agendaService.getMyDay as any).mockResolvedValue([]);
     (agendaService.getMyWeek as any) = vi.fn().mockResolvedValue([]);
-    (agendaService.getMyMonth as any) = vi.fn().mockResolvedValue([]);
+    (agendaService.getMyWeek as any).mockResolvedValue([]);
+    (agendaService.getMyMonth as any).mockResolvedValue([]);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
