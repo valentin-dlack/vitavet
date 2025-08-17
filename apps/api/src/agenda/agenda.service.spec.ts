@@ -5,6 +5,8 @@ import { AgendaService } from './agenda.service';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { User } from '../users/entities/user.entity';
+import { AgendaBlock } from './entities/agenda-block.entity';
+import { TimeSlot } from '../slots/entities/time-slot.entity';
 
 describe('AgendaService', () => {
   let service: AgendaService;
@@ -15,6 +17,8 @@ describe('AgendaService', () => {
   const aptRepoMock = { find: jest.fn() } as unknown as Repository<Appointment>;
   const animalRepoMock = { find: jest.fn() } as unknown as Repository<Animal>;
   const userRepoMock = { find: jest.fn() } as unknown as Repository<User>;
+  const blockRepoMock = { save: jest.fn(), create: jest.fn() } as unknown as Repository<AgendaBlock>;
+  const timeSlotRepoMock = { find: jest.fn(), save: jest.fn() } as unknown as Repository<TimeSlot>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +27,8 @@ describe('AgendaService', () => {
         { provide: getRepositoryToken(Appointment), useValue: aptRepoMock },
         { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
         { provide: getRepositoryToken(User), useValue: userRepoMock },
+        { provide: getRepositoryToken(AgendaBlock), useValue: blockRepoMock },
+        { provide: getRepositoryToken(TimeSlot), useValue: timeSlotRepoMock },
       ],
     }).compile();
 
@@ -86,14 +92,39 @@ describe('AgendaService', () => {
     const start = new Date('2024-01-08T00:00:00.000Z');
     const end = new Date('2024-01-14T23:59:59.999Z');
     const appt = {
-      id: 'apt2', vetUserId: 'vet1', animalId: 'an2', status: 'PENDING',
-      startsAt: new Date('2024-01-10T11:00:00.000Z'), endsAt: new Date('2024-01-10T11:30:00.000Z'),
+      id: 'apt2',
+      vetUserId: 'vet1',
+      animalId: 'an2',
+      status: 'PENDING',
+      startsAt: new Date('2024-01-10T11:00:00.000Z'),
+      endsAt: new Date('2024-01-10T11:30:00.000Z'),
     } as any;
     (aptRepoMock.find as any) = jest.fn().mockResolvedValue([appt]);
-    (animalRepoMock.find as any) = jest.fn().mockResolvedValue([{ id: 'an2', name: 'Luna', ownerId: 'u2' }]);
-    (userRepoMock.find as any) = jest.fn().mockResolvedValue([{ id: 'u2', firstName: 'Leo', lastName: 'L', email: 'l@ex.com' }]);
+    (animalRepoMock.find as any) = jest
+      .fn()
+      .mockResolvedValue([{ id: 'an2', name: 'Luna', ownerId: 'u2' }]);
+    (userRepoMock.find as any) = jest
+      .fn()
+      .mockResolvedValue([
+        { id: 'u2', firstName: 'Leo', lastName: 'L', email: 'l@ex.com' },
+      ]);
     const res = await service.getVetRangeAgenda('vet1', start, end);
     expect(res).toHaveLength(1);
     expect(res[0]).toMatchObject({ id: 'apt2', owner: { firstName: 'Leo' } });
+  });
+
+  it('blocks slots and saves block entry', async () => {
+    const startsAt = new Date('2024-01-10T09:00:00.000Z');
+    const endsAt = new Date('2024-01-10T10:00:00.000Z');
+    (blockRepoMock.create as any) = jest.fn().mockReturnValue({ id: 'b1' });
+    (blockRepoMock.save as any) = jest.fn().mockResolvedValue({ id: 'b1', clinicId: 'c1', vetUserId: 'v1', blockStartsAt: startsAt, blockEndsAt: endsAt, reason: null });
+    (timeSlotRepoMock.find as any) = jest.fn().mockResolvedValue([
+      { id: 's1', startsAt: new Date('2024-01-10T09:00:00.000Z'), endsAt: new Date('2024-01-10T09:30:00.000Z'), isAvailable: true },
+      { id: 's2', startsAt: new Date('2024-01-10T10:00:00.000Z'), endsAt: new Date('2024-01-10T10:30:00.000Z'), isAvailable: true },
+    ]);
+    const res = await service.blockSlots('c1', 'v1', startsAt, endsAt);
+    expect(blockRepoMock.save).toHaveBeenCalled();
+    expect(timeSlotRepoMock.find).toHaveBeenCalled();
+    expect(res).toHaveProperty('id', 'b1');
   });
 });

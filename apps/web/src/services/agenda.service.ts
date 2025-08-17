@@ -27,6 +27,11 @@ class AgendaService {
     const { httpService } = await import('./http.service');
     return httpService.get<AgendaItem[]>(endpoint);
   }
+
+  async block(data: { clinicId: string; startsAt: string; endsAt: string; reason?: string }): Promise<{ id: string }>{
+    const { httpService } = await import('./http.service');
+    return httpService.post<{ id: string }>(`/agenda/block`, data);
+  }
 }
 
 export const agendaService = new AgendaService();

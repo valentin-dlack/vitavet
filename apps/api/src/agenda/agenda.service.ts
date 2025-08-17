@@ -4,6 +4,8 @@ import { Between, In, Repository } from 'typeorm';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { User } from '../users/entities/user.entity';
+import { AgendaBlock } from './entities/agenda-block.entity';
+import { TimeSlot } from '../slots/entities/time-slot.entity';
 
 export interface AgendaItem {
   id: string;
@@ -30,6 +32,10 @@ export class AgendaService {
     private readonly animalRepository: Repository<Animal>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(AgendaBlock)
+    private readonly blockRepository: Repository<AgendaBlock>,
+    @InjectRepository(TimeSlot)
+    private readonly timeSlotRepository: Repository<TimeSlot>,
   ) {}
 
   async getVetDayAgenda(vetUserId: string, date: Date): Promise<AgendaItem[]> {
@@ -119,7 +125,9 @@ export class AgendaService {
 
     return appts.map((a) => {
       const animal = animals.find((an) => an.id === a.animalId);
-      const owner = animal ? owners.find((u) => u.id === animal.ownerId) : undefined;
+      const owner = animal
+        ? owners.find((u) => u.id === animal.ownerId)
+        : undefined;
       return {
         id: a.id,
         startsAt: a.startsAt.toISOString(),
@@ -145,5 +153,43 @@ export class AgendaService {
           : undefined,
       } as AgendaItem;
     });
+  }
+
+  async blockSlots(
+    clinicId: string,
+    vetUserId: string,
+    startsAt: Date,
+    endsAt: Date,
+    reason?: string,
+  ): Promise<{ id: string } & Pick<AgendaBlock, 'clinicId' | 'vetUserId' | 'blockStartsAt' | 'blockEndsAt' | 'reason'> > {
+    if (endsAt <= startsAt) {
+      throw new Error('Invalid range');
+    }
+    // Save block
+    const block = this.blockRepository.create({
+      clinicId,
+      vetUserId,
+      blockStartsAt: startsAt,
+      blockEndsAt: endsAt,
+      reason: reason ?? null,
+    });
+    const saved = await this.blockRepository.save(block);
+
+    // Mark overlapping timeslots as unavailable
+    const slots = await this.timeSlotRepository.find({ where: { clinicId, vetUserId, isAvailable: true } });
+    const overlapping = slots.filter((s) => s.startsAt < endsAt && s.endsAt > startsAt);
+    for (const s of overlapping) {
+      s.isAvailable = false;
+      await this.timeSlotRepository.save(s);
+    }
+
+    return {
+      id: saved.id,
+      clinicId: saved.clinicId,
+      vetUserId: saved.vetUserId,
+      blockStartsAt: saved.blockStartsAt,
+      blockEndsAt: saved.blockEndsAt,
+      reason: saved.reason ?? null,
+    };
   }
 }

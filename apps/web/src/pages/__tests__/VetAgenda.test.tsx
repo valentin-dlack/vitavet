@@ -68,6 +68,23 @@ describe('VetAgenda', () => {
     fireEvent.click(screen.getByText('Mois'));
     await waitFor(() => expect(agendaService.getMyMonth).toHaveBeenCalled());
   });
+
+  it('opens block modal and submits block', async () => {
+    (agendaService.getMyDay as any).mockResolvedValue([]);
+    (agendaService.block as any) = vi.fn().mockResolvedValue({ id: 'b1' });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Bloquer un créneau' }));
+    // Modal title
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Bloquer un créneau' })).toBeInTheDocument());
+    // Fill a clinic id
+    const input = screen.getByLabelText('Clinique ID');
+    fireEvent.change(input, { target: { value: 'c1' } });
+    fireEvent.click(screen.getByText('Bloquer'));
+    await waitFor(() => expect(agendaService.block).toHaveBeenCalled());
+  });
 });
 
 
