@@ -7,6 +7,18 @@ import { agendaService } from '../../services/agenda.service';
 vi.mock('../../services/agenda.service', () => ({
   agendaService: {
     getMyDay: vi.fn(),
+    getMyWeek: vi.fn(),
+    getMyMonth: vi.fn(),
+    block: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/clinics.service', () => ({
+  clinicsService: {
+    search: vi.fn().mockResolvedValue([
+      { id: 'c1', name: 'Clinique A', postcode: '75001', city: 'Paris' },
+      { id: 'c2', name: 'Clinique B', postcode: '69001', city: 'Lyon' },
+    ]),
   },
 }));
 
@@ -51,8 +63,11 @@ describe('VetAgenda', () => {
     });
   });
 
-  it('navigates dates with buttons', async () => {
+  it('navigates dates with buttons and switches views', async () => {
     (agendaService.getMyDay as any).mockResolvedValue([]);
+    (agendaService.getMyWeek as any) = vi.fn().mockResolvedValue([]);
+    (agendaService.getMyWeek as any).mockResolvedValue([]);
+    (agendaService.getMyMonth as any).mockResolvedValue([]);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
@@ -61,6 +76,28 @@ describe('VetAgenda', () => {
     fireEvent.click(screen.getByText('← Précédent'));
     fireEvent.click(screen.getByText('Suivant →'));
     expect(agendaService.getMyDay).toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Semaine'));
+    await waitFor(() => expect(agendaService.getMyWeek).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Mois'));
+    await waitFor(() => expect(agendaService.getMyMonth).toHaveBeenCalled());
+  });
+
+  it('opens block modal and submits block', async () => {
+    (agendaService.getMyDay as any).mockResolvedValue([]);
+    (agendaService.block as any).mockResolvedValue({ id: 'b1' });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Bloquer un créneau' }));
+    // Modal title
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Bloquer un créneau' })).toBeInTheDocument());
+    // Select a clinic from populated list
+    const select = screen.getByLabelText('Clinique') as HTMLSelectElement;
+    const firstOption = Array.from(select.options).find((o) => o.value);
+    fireEvent.change(select, { target: { value: firstOption!.value } });
+    fireEvent.click(screen.getByText('Bloquer'));
+    await waitFor(() => expect(agendaService.block).toHaveBeenCalled());
   });
 });
 

@@ -6,9 +6,10 @@ export interface AnimalDto {
   birthdate?: string | null;
 }
 
+import { httpService } from './http.service';
+
 class AnimalsService {
   async getMyAnimals(clinicId: string): Promise<AnimalDto[]> {
-    const { httpService } = await import('./http.service');
     return httpService.get<AnimalDto[]>(`/animals/me?clinicId=${encodeURIComponent(clinicId)}`);
   }
 }

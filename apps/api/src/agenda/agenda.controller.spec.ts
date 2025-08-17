@@ -16,7 +16,18 @@ describe('AgendaController', () => {
       providers: [
         {
           provide: AgendaService,
-          useValue: { getVetDayAgenda: jest.fn().mockResolvedValue([]) },
+          useValue: {
+            getVetDayAgenda: jest.fn().mockResolvedValue([]),
+            getVetRangeAgenda: jest.fn().mockResolvedValue([]),
+            blockSlots: jest.fn().mockResolvedValue({
+              id: 'b1',
+              clinicId: 'c1',
+              vetUserId: 'v1',
+              blockStartsAt: new Date(),
+              blockEndsAt: new Date(Date.now() + 3600000),
+              reason: null,
+            }),
+          },
         },
       ],
     })
@@ -43,5 +54,35 @@ describe('AgendaController', () => {
     );
     expect(service.getVetDayAgenda).toHaveBeenCalled();
     expect(res).toEqual([]);
+  });
+
+  it('getMyAgenda week delegates to range service', async () => {
+    const res = await controller.getMyAgenda(
+      { id: 'vet1' } as User,
+      '2024-01-10',
+      'week',
+    );
+    expect(service.getVetRangeAgenda).toHaveBeenCalled();
+    expect(res).toEqual([]);
+  });
+
+  it('getMyAgenda month delegates to range service', async () => {
+    const res = await controller.getMyAgenda(
+      { id: 'vet1' } as User,
+      '2024-01-10',
+      'month',
+    );
+    expect(service.getVetRangeAgenda).toHaveBeenCalled();
+    expect(res).toEqual([]);
+  });
+
+  it('block calls service and returns block info', async () => {
+    const res = await controller.block({ id: 'v1' } as User, {
+      clinicId: 'c1',
+      startsAt: new Date().toISOString(),
+      endsAt: new Date(Date.now() + 3600000).toISOString(),
+    });
+    expect(service.blockSlots).toHaveBeenCalled();
+    expect(res).toHaveProperty('id');
   });
 });

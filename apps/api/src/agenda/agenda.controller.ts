@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AgendaService, AgendaItem } from './agenda.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -17,9 +17,64 @@ export class AgendaController {
   async getMyAgenda(
     @CurrentUser() user: User,
     @Query('date') date: string,
+    @Query('range') range: 'day' | 'week' | 'month' = 'day',
   ): Promise<AgendaItem[]> {
-    // For MVP, only day range is supported
     const target = date ? new Date(date) : new Date();
+    if (range === 'week') {
+      const start = new Date(target);
+      const end = new Date(target);
+      // week: Monday 00:00 to Sunday 23:59:59.999 (ISO weeks simplified)
+      const day = start.getDay() || 7; // 1..7
+      start.setDate(start.getDate() - (day - 1));
+      start.setHours(0, 0, 0, 0);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return this.agendaService.getVetRangeAgenda(user.id, start, end);
+    }
+    if (range === 'month') {
+      const start = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0,
+      );
+      const end = new Date(
+        target.getFullYear(),
+        target.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
+      return this.agendaService.getVetRangeAgenda(user.id, start, end);
+    }
     return this.agendaService.getVetDayAgenda(user.id, target);
+  }
+
+  @Post('block')
+  @Roles('VET')
+  async block(
+    @CurrentUser() user: User,
+    @Body()
+    body: {
+      clinicId: string;
+      startsAt: string;
+      endsAt: string;
+      reason?: string;
+    },
+  ) {
+    const { clinicId, startsAt, endsAt, reason } = body;
+    const res = await this.agendaService.blockSlots(
+      clinicId,
+      user.id,
+      new Date(startsAt),
+      new Date(endsAt),
+      reason,
+    );
+    return res;
   }
 }
