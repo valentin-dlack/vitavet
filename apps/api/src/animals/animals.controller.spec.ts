@@ -3,6 +3,7 @@ import { AnimalsController } from './animals.controller';
 import { AnimalsService } from './animals.service';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 describe('AnimalsController', () => {
   let controller: AnimalsController;
@@ -23,6 +24,8 @@ describe('AnimalsController', () => {
       .overrideGuard(ThrottlerGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

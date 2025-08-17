@@ -41,6 +41,8 @@ describe('JwtStrategy', () => {
       firstName: 'A',
       lastName: 'B',
       role: 'VET',
+      roles: ['VET'],
+      clinicIds: [],
     });
   });
   it('returns null when user invalid', async () => {

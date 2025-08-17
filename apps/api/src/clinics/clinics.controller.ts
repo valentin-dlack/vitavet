@@ -1,7 +1,10 @@
-import { Controller, Get, Query, Post, Param } from '@nestjs/common';
+import { Controller, Get, Query, Post, Param, UseGuards } from '@nestjs/common';
 import { ClinicsService } from './clinics.service';
 import { GetVetsDto } from './dto/get-vets.dto';
 import { Vet } from './clinics.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('clinics')
 export class ClinicsController {
@@ -41,6 +44,8 @@ export class ClinicsController {
   }
 
   @Post('seed')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER', 'ADMIN_CLINIC')
   async seedDemoData() {
     await this.clinicsService.seedDemoData();
     return { message: 'Demo data seeded successfully' };
