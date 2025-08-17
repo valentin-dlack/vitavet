@@ -84,7 +84,7 @@ describe('VetAgenda', () => {
 
   it('opens block modal and submits block', async () => {
     (agendaService.getMyDay as any).mockResolvedValue([]);
-    (agendaService.block as any) = vi.fn().mockResolvedValue({ id: 'b1' });
+    (agendaService.block as any).mockResolvedValue({ id: 'b1' });
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/Agenda du jour/)).toBeInTheDocument();
