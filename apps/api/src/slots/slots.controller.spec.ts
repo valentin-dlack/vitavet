@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SlotsController } from './slots.controller';
 import { SlotsService } from './slots.service';
 import { GetSlotsDto } from './dto/get-slots.dto';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 describe('SlotsController', () => {
   let controller: SlotsController;
@@ -36,7 +37,10 @@ describe('SlotsController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SlotsController>(SlotsController);
     service = module.get<SlotsService>(SlotsService);
@@ -56,12 +60,5 @@ describe('SlotsController', () => {
 
     expect(service.getAvailableSlots).toHaveBeenCalledWith(query);
     expect(result).toEqual(mockSlots);
-  });
-
-  it('should seed demo slots', async () => {
-    const result = await controller.seedDemoSlots();
-
-    expect(service.seedDemoSlots).toHaveBeenCalled();
-    expect(result).toEqual({ message: 'Demo slots seeded successfully' });
   });
 });

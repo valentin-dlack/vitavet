@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { appointmentsService, type CreateAppointmentData } from '../services/appointments.service';
 
 interface AppointmentModalProps {
@@ -34,7 +34,8 @@ export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }:
 				// ignore if not owner / none found
 			}
 		})());
-	import { useEffect } from 'react';
+	}
+
 	useEffect(() => {
 		if (isOpen && animals.length === 0 && typeof window !== 'undefined') {
 			(void (async () => {

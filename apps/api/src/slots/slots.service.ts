@@ -70,91 +70,32 @@ export class SlotsService {
       }));
   }
 
-  private generateMockSlots(
-    clinicId: string,
-    date: Date,
-    vetUserId?: string,
-  ): AvailableSlot[] {
-    const slots: AvailableSlot[] = [];
-
-    // Mock vets for the clinic
-    const mockVets = [
-      '550e8400-e29b-41d4-a716-446655440001', // Dr. Martin
-      '550e8400-e29b-41d4-a716-446655440002', // Dr. Dubois
-      '550e8400-e29b-41d4-a716-446655440003', // Dr. Leroy
-    ];
-
-    // Generate slots from 9:00 to 17:00 (8 hours)
-    const startHour = 9;
-    const endHour = 17;
-    const slotDuration = 30; // 30 minutes
-
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += slotDuration) {
-        const slotDate = new Date(date);
-        slotDate.setHours(hour, minute, 0, 0);
-
-        const endDate = new Date(slotDate);
-        endDate.setMinutes(endDate.getMinutes() + slotDuration);
-
-        // If vetUserId is specified, only generate slots for that vet
-        // Otherwise, generate slots for all vets
-        const vetsToUse = vetUserId ? [vetUserId] : mockVets;
-
-        for (const vet of vetsToUse) {
-          // Skip some slots randomly to simulate availability
-          if (Math.random() > 0.3) {
-            // 70% availability
-            slots.push({
-              id: `slot-${Date.now()}-${Math.random()}`,
-              startsAt: slotDate.toISOString(),
-              endsAt: endDate.toISOString(),
-              durationMinutes: slotDuration,
-              vetUserId: vet,
-            });
-          }
-        }
-      }
-    }
-
-    // Sort by start time
-    return slots.sort(
-      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
-    );
-  }
-
-  async seedDemoSlots(): Promise<void> {
+  async seedDemoSlots(clinicId: string, vetId: string): Promise<void> {
     // Seed simple grid of slots for demo clinic and vets
-    const clinicId = '550e8400-e29b-41d4-a716-446655440000';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const vets = [
-      '550e8400-e29b-41d4-a716-446655440001',
-      '550e8400-e29b-41d4-a716-446655440002',
-    ];
+
     for (let d = 0; d < 3; d++) {
       const day = new Date(today.getTime() + d * 24 * 60 * 60 * 1000);
-      for (const vet of vets) {
-        for (let hour = 9; hour < 17; hour++) {
-          for (let minute = 0; minute < 60; minute += 30) {
-            const startsAt = new Date(day);
-            startsAt.setHours(hour, minute, 0, 0);
-            const endsAt = new Date(startsAt.getTime() + 30 * 60000);
-            const existing = await this.timeSlotRepository.findOne({
-              where: { clinicId, vetUserId: vet, startsAt },
-            });
-            if (!existing) {
-              await this.timeSlotRepository.save(
-                this.timeSlotRepository.create({
-                  clinicId,
-                  vetUserId: vet,
-                  startsAt,
-                  endsAt,
-                  isAvailable: true,
-                  durationMinutes: 30,
-                }),
-              );
-            }
+      for (let hour = 9; hour < 17; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const startsAt = new Date(day);
+          startsAt.setHours(hour, minute, 0, 0);
+          const endsAt = new Date(startsAt.getTime() + 30 * 60000);
+          const existing = await this.timeSlotRepository.findOne({
+            where: { clinicId, vetUserId: vetId, startsAt },
+          });
+          if (!existing) {
+            await this.timeSlotRepository.save(
+              this.timeSlotRepository.create({
+                clinicId,
+                vetUserId: vetId,
+                startsAt,
+                endsAt,
+                isAvailable: true,
+                durationMinutes: 30,
+              }),
+            );
           }
         }
       }

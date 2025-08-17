@@ -4,6 +4,7 @@ import { AgendaService } from './agenda.service';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { User } from '../users/entities/user.entity';
 
 describe('AgendaController', () => {
   let controller: AgendaController;
@@ -37,8 +38,7 @@ describe('AgendaController', () => {
 
   it('getMyAgenda delegates to service with current user id', async () => {
     const res = await controller.getMyAgenda(
-      { id: 'vet1' } as any,
-      'day',
+      { id: 'vet1' } as User,
       '2024-01-10',
     );
     expect(service.getVetDayAgenda).toHaveBeenCalled();
