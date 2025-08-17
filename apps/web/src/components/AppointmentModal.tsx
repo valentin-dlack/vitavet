@@ -34,7 +34,21 @@ export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }:
 				// ignore if not owner / none found
 			}
 		})());
-	}
+	import { useEffect } from 'react';
+	useEffect(() => {
+		if (isOpen && animals.length === 0 && typeof window !== 'undefined') {
+			(void (async () => {
+				try {
+					const mod = await import('../services/animals.service');
+					const list = await mod.animalsService.getMyAnimals(clinicId);
+					setAnimals(list.map((a) => ({ id: a.id, name: a.name })));
+					setAnimalId((prev) => prev || (list[0]?.id || ''));
+				} catch {
+					// ignore if not owner / none found
+				}
+			})());
+		}
+	}, [isOpen, clinicId, animals.length]);
 
 	const handleConfirm = async () => {
 		if (!slot.vetUserId) {
