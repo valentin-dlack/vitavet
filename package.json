@@ -12,6 +12,7 @@
     "test:e2e": "pnpm --filter api test:e2e",
     "coverage": "pnpm --filter api test:cov && pnpm --filter api test:e2e:cov && pnpm --filter web test:cov",
     "coverage:summary": "node scripts/coverage-summary.mjs",
+    "coverage:summary:simple": "node scripts/coverage-summary.mjs --simple",
     "prepare": "husky",
     "commit-msg": "husky",
     "db:dump": "node scripts/db-dump.mjs",

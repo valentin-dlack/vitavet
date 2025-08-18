@@ -66,8 +66,7 @@ jobs:
       - name: Generate combined coverage summary
         run: |
           pnpm coverage:summary | tee coverage-summary.txt
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          node scripts/coverage-summary.mjs --simple | tee coverage-summary-simple.txt
           echo "" >> $GITHUB_STEP_SUMMARY
           cat coverage-summary.txt >> $GITHUB_STEP_SUMMARY
 
@@ -76,4 +75,4 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage
-          path: coverage-summary.txt
+          path: coverage-summary-simple.txt
