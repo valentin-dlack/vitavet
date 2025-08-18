@@ -12,6 +12,8 @@ import { PendingAppointments } from './pages/PendingAppointments';
 import { useAuth } from './hooks/useAuth';
 import { RolePanel } from './pages/RolePanel';
 import { VetAgenda } from './pages/VetAgenda';
+import { OwnerAppointments } from './pages/owner/OwnerAppointments';
+import { OwnerAnimals } from './pages/owner/OwnerAnimals';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
@@ -23,7 +25,7 @@ function App() {
             <Link to="/" className="font-semibold">🐾 VitaVet</Link>
             <nav className="text-sm text-gray-600 flex gap-4">
               <Link to="/clinics" className="hover:text-gray-900">Cliniques</Link>
-              {isAuthenticated && ['ASV','VET','ADMIN_CLINIC'].includes((user?.role || '')) ? (
+              {isAuthenticated && ['ASV','VET','ADMIN_CLINIC','OWNER'].includes((user?.role || '')) ? (
                 <Link to="/panel" className="hover:text-gray-900">Panel</Link>
               ) : null}
               {isAuthenticated ? (
@@ -61,8 +63,18 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/panel" element={
-              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC"]}>
+              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC","OWNER"]}>
                 <RolePanel />
+              </ProtectedRoute>
+            } />
+            <Route path="/owner/appointments" element={
+              <ProtectedRoute requiredRole="OWNER">
+                <OwnerAppointments />
+              </ProtectedRoute>
+            } />
+            <Route path="/owner/animals" element={
+              <ProtectedRoute requiredRole="OWNER">
+                <OwnerAnimals />
               </ProtectedRoute>
             } />
             <Route path="/vet/agenda" element={

@@ -4,7 +4,7 @@ export interface AppointmentResponse {
   animalId?: string;
   vetUserId?: string;
   typeId?: string;
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   startsAt: string;
   endsAt: string;
   createdAt: string;
@@ -47,6 +47,15 @@ import { httpService } from './http.service';
 class AppointmentsService {
   async createAppointment(data: CreateAppointmentData): Promise<AppointmentResponse> {
     return httpService.post<AppointmentResponse>('/appointments', data);
+  }
+
+  async getMyUpcoming(): Promise<AppointmentResponse[]> {
+    return httpService.get<AppointmentResponse[]>('/appointments/me');
+  }
+
+  async getMyAppointments(status?: AppointmentResponse['status']): Promise<AppointmentResponse[]> {
+    const url = status ? `/appointments/me?status=${encodeURIComponent(status)}` : '/appointments/me';
+    return httpService.get<AppointmentResponse[]>(url);
   }
 
   async getPendingAppointments(

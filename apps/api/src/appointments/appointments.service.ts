@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
+import { Repository, FindOptionsWhere, In, MoreThan } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { User } from '../users/entities/user.entity';
@@ -235,5 +235,105 @@ export class AppointmentsService {
       endsAt: saved.endsAt.toISOString(),
       createdAt: saved.createdAt.toISOString(),
     };
+  }
+
+  async getOwnerUpcomingAppointments(
+    ownerId: string,
+  ): Promise<AppointmentResponse[]> {
+    // find animals of owner
+    const animals = await this.animalRepository.find({ where: { ownerId } });
+    if (animals.length === 0) return [];
+    const animalIds = animals.map((a) => a.id);
+    const now = new Date();
+    const filtered = await this.appointmentRepository.find({
+      where: {
+        animalId: In(animalIds),
+        startsAt: MoreThan(now),
+      },
+      order: { startsAt: 'ASC' },
+    });
+
+    // enrich minimal animal and vet details
+    const vetIds = Array.from(new Set(filtered.map((a) => a.vetUserId)));
+    const [vets] = await Promise.all([
+      vetIds.length
+        ? this.userRepository.find({ where: { id: In(vetIds) } })
+        : Promise.resolve([]),
+    ]);
+
+    const responses: AppointmentResponse[] = filtered.map((apt) => {
+      const vet = vets.find((v) => v.id === apt.vetUserId);
+      return {
+        id: apt.id,
+        clinicId: apt.clinicId,
+        animalId: apt.animalId ?? undefined,
+        vetUserId: apt.vetUserId ?? undefined,
+        typeId: apt.typeId ?? undefined,
+        status: apt.status,
+        startsAt: apt.startsAt.toISOString(),
+        endsAt: apt.endsAt.toISOString(),
+        createdAt: apt.createdAt.toISOString(),
+        vet: vet
+          ? {
+              id: vet.id,
+              firstName: vet.firstName,
+              lastName: vet.lastName,
+              email: vet.email,
+            }
+          : undefined,
+      };
+    });
+
+    return responses;
+  }
+
+  async getOwnerAppointments(
+    ownerId: string,
+    status?: AppointmentStatus,
+  ): Promise<AppointmentResponse[]> {
+    const animals = await this.animalRepository.find({ where: { ownerId } });
+    if (animals.length === 0) return [];
+    const animalIds = animals.map((a) => a.id);
+
+    const where: FindOptionsWhere<Appointment> = {
+      animalId: In(animalIds),
+    } as FindOptionsWhere<Appointment>;
+    if (status) {
+      (where as unknown as { status?: AppointmentStatus }).status = status;
+    }
+    const list = await this.appointmentRepository.find({
+      where,
+      order: { startsAt: 'DESC' },
+    });
+
+    const vetIds = Array.from(new Set(list.map((a) => a.vetUserId)));
+    const [vets] = await Promise.all([
+      vetIds.length
+        ? this.userRepository.find({ where: { id: In(vetIds) } })
+        : Promise.resolve([]),
+    ]);
+
+    return list.map((apt) => {
+      const vet = vets.find((v) => v.id === apt.vetUserId);
+      return {
+        id: apt.id,
+        clinicId: apt.clinicId,
+        animalId: apt.animalId,
+        vetUserId: apt.vetUserId,
+        typeId: apt.typeId ?? undefined,
+        status: apt.status,
+        startsAt: apt.startsAt.toISOString(),
+        endsAt: apt.endsAt.toISOString(),
+        createdAt: apt.createdAt.toISOString(),
+        vet: vet
+          ? {
+              id: vet.id,
+              firstName: vet.firstName,
+              lastName: vet.lastName,
+              email: vet.email,
+            }
+          : undefined,
+      };
+    });
   }
 }

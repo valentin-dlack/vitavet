@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Animal } from './entities/animal.entity';
@@ -18,22 +22,32 @@ export class AnimalsService {
 
   async findByOwnerAndClinic(
     ownerId: string,
-    clinicId: string,
+    clinicId?: string,
   ): Promise<Animal[]> {
-    return this.animalRepository.find({ where: { ownerId, clinicId } });
+    if (clinicId) {
+      return this.animalRepository.find({ where: { ownerId, clinicId } });
+    }
+    return this.animalRepository.find({ where: { ownerId } });
   }
 
   async getAnimalHistory(
     requesterId: string,
     animalId: string,
   ): Promise<{ animal: Animal; appointments: Appointment[] }> {
-    const animal = await this.animalRepository.findOne({ where: { id: animalId } });
+    const animal = await this.animalRepository.findOne({
+      where: { id: animalId },
+    });
     if (!animal) throw new NotFoundException('Animal not found');
 
     // Authorization: owner of animal OR clinic staff (VET/ASV/ADMIN_CLINIC) of same clinic
     if (animal.ownerId !== requesterId) {
-      const staffLink = await this.userClinicRoleRepository.findOne({ where: { userId: requesterId, clinicId: animal.clinicId } });
-      if (!staffLink || !['VET', 'ASV', 'ADMIN_CLINIC'].includes(staffLink.role)) {
+      const staffLink = await this.userClinicRoleRepository.findOne({
+        where: { userId: requesterId, clinicId: animal.clinicId },
+      });
+      if (
+        !staffLink ||
+        !['VET', 'ASV', 'ADMIN_CLINIC'].includes(staffLink.role)
+      ) {
         throw new ForbiddenException('Not allowed');
       }
     }

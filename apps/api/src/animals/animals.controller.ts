@@ -16,7 +16,7 @@ export class AnimalsController {
   @Roles('OWNER')
   async getMyAnimals(
     @CurrentUser() user: User,
-    @Query('clinicId') clinicId: string,
+    @Query('clinicId') clinicId?: string,
   ) {
     return this.animalsService.findByOwnerAndClinic(user.id, clinicId);
   }

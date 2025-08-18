@@ -3,7 +3,7 @@ export interface AgendaItem {
   id: string;
   startsAt: string;
   endsAt: string;
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED';
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'BLOCKED' | 'COMPLETED';
   animal?: { id: string; name: string; birthdate?: string | null; species?: string | null; breed?: string | null; weightKg?: number | null };
   owner?: { id: string; firstName: string; lastName: string; email: string };
 }

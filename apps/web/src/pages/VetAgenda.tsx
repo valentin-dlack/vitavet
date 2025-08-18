@@ -300,11 +300,14 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
             if (dayIndex < 0 || dayIndex > 6) return null; // outside current week
             const { start, end } = computeRowSpan(s, e);
             const content = `${it.animal?.name || 'RDV'} — ${it.status}`;
+            const statusClass = it.status === 'COMPLETED'
+              ? 'bg-gray-400/80 hover:bg-gray-500'
+              : 'bg-blue-500/80 hover:bg-blue-600';
             return (
               <button
                 type="button"
                 key={`${it.id}-${start}`}
-                className="rounded bg-blue-500/80 text-white text-xs px-2 py-1 overflow-hidden cursor-pointer hover:bg-blue-600 text-left"
+                className={`rounded ${statusClass} text-white text-xs px-2 py-1 overflow-hidden cursor-pointer text-left`}
                 style={{ gridColumn: `${Number(dayIndex) + 2} / ${Number(dayIndex) + 3}`, gridRow: `${start} / ${end}`, margin: 2 }}
                 title={content}
                 onClick={() => setOpenItem(it)}
@@ -503,7 +506,7 @@ function AgendaRow({ item }: { item: AgendaItem }) {
           <div className="text-xs text-gray-600">{item.animal?.name || 'Animal'}</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded ${item.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+          <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
             {item.status}
           </span>
           <button className="text-blue-600 text-sm hover:underline" onClick={() => setOpen(true)}>Détails</button>

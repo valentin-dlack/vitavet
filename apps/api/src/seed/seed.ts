@@ -167,51 +167,85 @@ async function bootstrap() {
       );
     }
 
-    // Random appointments around today (±5 days)
+    // Realistic appointments per animal: one 3 months ago, one today, one in 2 months
     const now = new Date();
-    const vets = [vet1, vet2];
     const animals = [animal1, animal2];
-    const creators = [owner, asv];
-    const statuses: ('PENDING' | 'CONFIRMED')[] = ['PENDING', 'CONFIRMED'];
+    const vets = [vet1, vet2];
     const types = [consult30, consult60];
 
-    for (let d = -5; d <= 5; d++) {
-      const base = new Date(now);
-      base.setDate(now.getDate() + d);
-      // Generate 3 random appointments per day
-      for (let k = 0; k < 3; k++) {
-        const startHour = 9 + Math.floor(Math.random() * 8); // 9..16
-        const startMin = Math.random() < 0.5 ? 0 : 30; // :00 or :30
-        const startsAt = new Date(base);
-        startsAt.setHours(startHour, startMin, 0, 0);
-
-        const type = types[Math.floor(Math.random() * types.length)];
-        const duration = type.durationMin;
-        const endsAt = new Date(startsAt.getTime() + duration * 60 * 1000);
-
-        const animal = animals[Math.floor(Math.random() * animals.length)];
-        const vet = vets[Math.floor(Math.random() * vets.length)];
-        const createdBy = creators[Math.floor(Math.random() * creators.length)];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-        const exists = await aptRepo.findOne({
-          where: { clinicId: clinic.id, startsAt, vetUserId: vet.id },
-        });
-        if (!exists) {
-          await aptRepo.save(
-            aptRepo.create({
-              clinicId: clinic.id,
-              animalId: animal.id,
-              vetUserId: vet.id,
-              typeId: type.id,
-              status,
-              startsAt,
-              endsAt,
-              createdByUserId: createdBy.id,
-            }),
-          );
-        }
+    type SeedStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED';
+    async function upsertAppointment(opts: {
+      animal: Animal;
+      vet: typeof vet1;
+      startsAt: Date;
+      type: AppointmentType;
+      status: SeedStatus;
+      createdByUserId: string;
+    }) {
+      const { animal, vet, startsAt, type, status, createdByUserId } = opts;
+      const endsAt = new Date(
+        startsAt.getTime() + type.durationMin * 60 * 1000,
+      );
+      const exists = await aptRepo.findOne({
+        where: { clinicId: clinic!.id, startsAt, vetUserId: vet.id },
+      });
+      if (!exists) {
+        await aptRepo.save(
+          aptRepo.create({
+            clinicId: clinic!.id,
+            animalId: animal.id,
+            vetUserId: vet.id,
+            typeId: type.id,
+            status,
+            startsAt,
+            endsAt,
+            createdByUserId,
+          }),
+        );
       }
+    }
+
+    for (let i = 0; i < animals.length; i++) {
+      const animal = animals[i];
+      const vet = vets[i % vets.length];
+
+      // 3 months ago, 10:00
+      const past = new Date(now);
+      past.setMonth(now.getMonth() - 3);
+      past.setHours(10, 0, 0, 0);
+      await upsertAppointment({
+        animal,
+        vet,
+        startsAt: past,
+        type: types[i % types.length],
+        status: 'COMPLETED',
+        createdByUserId: vet.id,
+      });
+
+      // today, 14:00
+      const today = new Date(now);
+      today.setHours(14, 0, 0, 0);
+      await upsertAppointment({
+        animal,
+        vet,
+        startsAt: today,
+        type: types[(i + 1) % types.length],
+        status: 'CONFIRMED',
+        createdByUserId: animal.ownerId,
+      });
+
+      // in 2 months, 11:00
+      const future = new Date(now);
+      future.setMonth(now.getMonth() + 2);
+      future.setHours(11, 0, 0, 0);
+      await upsertAppointment({
+        animal,
+        vet,
+        startsAt: future,
+        type: types[i % types.length],
+        status: 'CONFIRMED',
+        createdByUserId: animal.ownerId,
+      });
     }
 
     // Reminder instance example J-7
