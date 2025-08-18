@@ -16,6 +16,9 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     validatePassword: jest.fn(),
     findPrimaryRole: jest.fn().mockResolvedValue(null),
+    findRolesAndClinics: jest
+      .fn()
+      .mockResolvedValue({ roles: [], clinicIds: [] }),
   };
 
   const mockJwtService = {

@@ -28,13 +28,17 @@ describe('JwtStrategy', () => {
         return 'A B';
       },
     } as any);
-    usersService.findPrimaryRole.mockResolvedValue('VET');
 
     const strat = new JwtStrategy(
       authService as unknown as AuthService,
       usersService as unknown as UsersService,
     );
-    const res = await strat.validate({ sub: 'u1', email: 'a@b.c' } as any);
+    const res = await strat.validate({
+      sub: 'u1',
+      email: 'a@b.c',
+      roles: ['VET'],
+      clinicIds: ['c1'],
+    } as any);
     expect(res).toEqual({
       id: 'u1',
       email: 'a@b.c',
@@ -42,7 +46,7 @@ describe('JwtStrategy', () => {
       lastName: 'B',
       role: 'VET',
       roles: ['VET'],
-      clinicIds: [],
+      clinicIds: ['c1'],
     });
   });
   it('returns null when user invalid', async () => {

@@ -8,6 +8,8 @@ import type { UserRole } from '../guards/roles.guard';
 interface JwtPayload {
   sub: string;
   email: string;
+  roles: UserRole[];
+  clinicIds: string[];
 }
 
 interface AuthenticatedUser {
@@ -39,18 +41,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       return null;
     }
 
-    // Load primary role and all roles (MVP: first match as primary, plus list)
-    const primaryRole =
-      (await this.usersService.findPrimaryRole(user.id)) || 'OWNER';
-    // For future: include clinicIds if needed; left empty for now
+    const primaryRole = payload.roles?.[0] || 'OWNER';
+
     const result: AuthenticatedUser = {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       role: primaryRole,
-      roles: [primaryRole],
-      clinicIds: [],
+      roles: payload.roles || [],
+      clinicIds: payload.clinicIds || [],
     };
     return result;
   }
