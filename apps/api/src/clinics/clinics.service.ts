@@ -6,6 +6,8 @@ import { NotFoundException } from '@nestjs/common';
 import { User } from '../users/entities/user.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { Service as ClinicServiceEntity } from './entities/service.entity';
+import { CreateClinicDto } from './dto/create-clinic.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
 export interface Vet {
   id: string;
@@ -27,6 +29,72 @@ export class ClinicsService {
     @InjectRepository(ClinicServiceEntity)
     private readonly serviceRepository: Repository<ClinicServiceEntity>,
   ) {}
+
+  async create(createClinicDto: CreateClinicDto): Promise<Clinic> {
+    const clinic = this.clinicRepository.create({
+      ...createClinicDto,
+      active: true, // Clinics are active by default
+    });
+    return this.clinicRepository.save(clinic);
+  }
+
+  async update(
+    id: string,
+    updateClinicDto: Partial<CreateClinicDto>,
+  ): Promise<Clinic> {
+    const clinic = await this.clinicRepository.preload({
+      id,
+      ...updateClinicDto,
+    });
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${id} not found`);
+    }
+    return this.clinicRepository.save(clinic);
+  }
+
+  async remove(id: string): Promise<void> {
+    const result = await this.clinicRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Clinic with ID ${id} not found`);
+    }
+  }
+
+  async assignRole(
+    clinicId: string,
+    assignRoleDto: AssignRoleDto,
+  ): Promise<UserClinicRole> {
+    const { userId, role } = assignRoleDto;
+
+    // Verify clinic and user exist
+    const clinic = await this.clinicRepository.findOne({
+      where: { id: clinicId },
+    });
+    if (!clinic) throw new NotFoundException('Clinic not found');
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Check if assignment already exists
+    const existingAssignment = await this.ucrRepository.findOne({
+      where: { clinicId, userId },
+    });
+    if (existingAssignment) {
+      // Update role if it exists
+      existingAssignment.role = role;
+      return this.ucrRepository.save(existingAssignment);
+    }
+
+    // Create new assignment
+    const newAssignment = this.ucrRepository.create({ clinicId, userId, role });
+    return this.ucrRepository.save(newAssignment);
+  }
+
+  async getClinicRoles(clinicId: string): Promise<UserClinicRole[]> {
+    return this.ucrRepository.find({
+      where: { clinicId },
+      relations: ['user'],
+    });
+  }
 
   async searchByPostcode(
     postcode: string,

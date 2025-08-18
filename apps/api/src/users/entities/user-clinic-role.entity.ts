@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Clinic } from '../../clinics/entities/clinic.entity';
+import type { UserRole } from 'src/auth/guards/roles.guard';
 
 @Entity('user_clinic_role')
 export class UserClinicRole {
@@ -11,7 +12,7 @@ export class UserClinicRole {
   clinicId!: string;
 
   @PrimaryColumn('text')
-  role!: 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC' | 'WEBMASTER';
+  role!: UserRole;
 
   @ManyToOne(() => User, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
