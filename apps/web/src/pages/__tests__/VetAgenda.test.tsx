@@ -99,6 +99,35 @@ describe('VetAgenda', () => {
     fireEvent.click(screen.getByText('Bloquer'));
     await waitFor(() => expect(agendaService.block).toHaveBeenCalled());
   });
+
+  it('shows legend and allows hiding blocks (filters)', async () => {
+    const now = new Date();
+    const monday = new Date(now);
+    const day = monday.getDay() || 7;
+    monday.setDate(now.getDate() - (day - 1));
+    const start = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 9, 0).toISOString();
+    const end = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 10, 0).toISOString();
+    (agendaService.getMyDay as any).mockResolvedValue([]);
+    (agendaService.getMyWeek as any).mockResolvedValue([
+      { id: 'evt1', startsAt: start, endsAt: end, status: 'BLOCKED', reason: 'Congés' },
+      { id: 'evt2', startsAt: start, endsAt: end, status: 'CONFIRMED', animal: { name: 'Rex' } },
+    ]);
+
+    renderPage();
+    fireEvent.click(screen.getByText('Semaine'));
+    await waitFor(() => expect(agendaService.getMyWeek).toHaveBeenCalled());
+    // Legend is visible
+    expect(screen.getByText('Confirmé')).toBeInTheDocument();
+    expect(screen.getByText('En attente')).toBeInTheDocument();
+    expect(screen.getByText('Terminé')).toBeInTheDocument();
+    expect(screen.getByText('Blocage')).toBeInTheDocument();
+    // Toggle blocks off reduces count text
+    const before = screen.getByText(/rendez-vous/).textContent;
+    const checkbox = screen.getByLabelText('Afficher les blocs');
+    fireEvent.click(checkbox);
+    const after = screen.getByText(/rendez-vous/).textContent;
+    expect(before).not.toEqual(after);
+  });
 });
 
 

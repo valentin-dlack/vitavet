@@ -18,6 +18,7 @@ export function VetAgenda() {
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockError, setBlockError] = useState<string | null>(null);
   const [clinics, setClinics] = useState<Array<{ id: string; name: string; city?: string; postcode?: string }>>([]);
+  const [showBlocks, setShowBlocks] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -57,15 +58,17 @@ export function VetAgenda() {
     setDate(toYmd(shifted));
   }
 
+  const filteredItems = useMemo(() => items.filter((it) => showBlocks || it.status !== 'BLOCKED'), [items, showBlocks]);
+
   const byHour = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
-    items.forEach((it) => {
+    filteredItems.forEach((it) => {
       const h = new Date(it.startsAt).toLocaleTimeString([], { hour: '2-digit' });
       if (!map.has(h)) map.set(h, []);
       map.get(h)!.push(it);
     });
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [items]);
+  }, [filteredItems]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -107,10 +110,26 @@ export function VetAgenda() {
           </div>
         </div>
 
+        {/* Filters & Legend (separate row for better spacing) */}
+        <div className="mb-3 p-3 bg-white border rounded">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <input id="toggle-blocks" type="checkbox" checked={showBlocks} onChange={(e) => setShowBlocks(e.target.checked)} />
+              <label htmlFor="toggle-blocks">Afficher les blocs</label>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-green-500 inline-block" aria-hidden /> Confirmé</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-yellow-400 inline-block" aria-hidden /> En attente</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-gray-400 inline-block" aria-hidden /> Terminé</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-300 inline-block" aria-hidden /> Blocage</span>
+            </div>
+          </div>
+        </div>
+
         {loading ? <div>Chargement…</div> : null}
         {error ? <div className="text-red-600">{error}</div> : null}
 
-        <div className="text-sm text-gray-600">{items.length} rendez-vous</div>
+        <div className="text-sm text-gray-600">{filteredItems.length} rendez-vous</div>
 
         {range === 'day' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
@@ -131,11 +150,11 @@ export function VetAgenda() {
         )}
 
         {range === 'week' && (
-          <WeekGrid items={items} anchorDate={date} />
+          <WeekGrid items={filteredItems} anchorDate={date} />
         )}
 
         {range === 'month' && (
-          <MonthGrid items={items} anchorDate={date} />
+          <MonthGrid items={filteredItems} anchorDate={date} />
         )}
       </div>
 
@@ -396,10 +415,12 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
                       </div>
                     );
                   }
+                  const isCompleted = it.status === 'COMPLETED';
+                  const color = it.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 hover:bg-green-100' : it.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : isCompleted ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
                   return (
                     <button
                       key={it.id}
-                      className="w-full text-left text-[11px] px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      className={`w-full text-left text-[11px] px-2 py-1 rounded ${color}`}
                       onClick={() => setOpenItem(it)}
                     >
                       {label}
