@@ -13,7 +13,7 @@ export function OwnerAnimals() {
     setError(null);
     // no clinic filter => all animals for owner
     animalsService
-      .getMyAnimals('')
+      .getMyAnimals({ allClinics: true })
       .then(setAnimals)
       .catch((e) => setError(e instanceof Error ? e.message : 'Erreur'))
       .finally(() => setLoading(false));
