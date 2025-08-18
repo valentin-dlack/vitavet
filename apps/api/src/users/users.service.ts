@@ -65,6 +65,17 @@ export class UsersService {
     return link?.role ?? null;
   }
 
+  async findRolesAndClinics(
+    userId: string,
+  ): Promise<{ roles: UserClinicRole['role'][]; clinicIds: string[] }> {
+    const links = await this.userClinicRoleRepository.find({
+      where: { userId },
+    });
+    const roles = links.map((link) => link.role);
+    const clinicIds = links.map((link) => link.clinicId);
+    return { roles, clinicIds };
+  }
+
   async validatePassword(user: User, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }

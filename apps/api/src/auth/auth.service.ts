@@ -34,7 +34,7 @@ export class AuthService {
     );
 
     // Generate JWT token
-    const token = this.generateToken(user);
+    const token = this.generateToken(user, ['OWNER'], []);
 
     // Return user data without password
     const userWithoutPassword = {
@@ -73,8 +73,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const { roles, clinicIds } = await this.usersService.findRolesAndClinics(
+      user.id,
+    );
+    if (!roles || !clinicIds) {
+      throw new UnauthorizedException(
+        'Unable to retrieve user roles or clinics',
+      );
+    }
     // Generate JWT token
-    const token = this.generateToken(user);
+    const token = this.generateToken(user, roles, clinicIds);
 
     // Resolve primary role for convenience in frontend RBAC display
     const primaryRole = await this.usersService.findPrimaryRole(user.id);
@@ -102,12 +110,18 @@ export class AuthService {
     return this.usersService.findById(userId);
   }
 
-  private generateToken(user: User): string {
+  private generateToken(
+    user: User,
+    roles: string[],
+    clinicIds: string[],
+  ): string {
     const payload = {
       sub: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      roles,
+      clinicIds,
     };
 
     return this.jwtService.sign(payload);
