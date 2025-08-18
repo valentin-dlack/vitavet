@@ -36,8 +36,6 @@ export class DocumentsService {
       file.originalname ||
       `document_${Date.now()}.${file.mimetype?.split('/')[1] || 'bin'}`;
 
-    console.error(`filename: ${filename}`);
-
     const documentData = {
       appointmentId,
       uploadedByUserId: userId,

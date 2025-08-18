@@ -38,10 +38,8 @@ export class DocumentsController {
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-          // Ensure we have a valid originalname for the extension
           const originalName = file.originalname || 'document';
           const extension = extname(originalName) || '.bin';
-          console.error(`${randomName}${extension}`);
           cb(null, `${randomName}${extension}`);
         },
       }),

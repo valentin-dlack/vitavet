@@ -7,15 +7,11 @@ class DocumentsService {
     file: File,
     description?: string,
   ): Promise<Document> {
-    console.log('Uploading document:', { appointmentId, file, description });
-    
     const formData = new FormData();
     formData.append('file', file);
     if (description) {
       formData.append('description', description);
     }
-
-    console.log('FormData created:', formData);
 
     return httpService
       .post<Document>(`/documents/upload/appointment/${appointmentId}`, formData);
