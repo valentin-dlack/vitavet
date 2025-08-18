@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX, useCallback } from 'react';
 import { agendaService, type AgendaItem } from '../services/agenda.service';
 import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
+import { appointmentsService, type CompleteAppointmentData } from '../services/appointments.service';
 
 function toYmd(d: Date) {
   return d.toISOString().split('T')[0];
@@ -19,8 +20,11 @@ export function VetAgenda() {
   const [blockError, setBlockError] = useState<string | null>(null);
   const [clinics, setClinics] = useState<Array<{ id: string; name: string; city?: string; postcode?: string }>>([]);
   const [showBlocks, setShowBlocks] = useState(true);
+  const blockDialogRef = useRef<HTMLDivElement | null>(null);
+  const blockFirstButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [openItem, setOpenItem] = useState<AgendaItem | null>(null);
 
-  useEffect(() => {
+  const fetchAgenda = useCallback(() => {
     setLoading(true);
     setError(null);
     const fetcher = range === 'day' ? agendaService.getMyDay : range === 'week' ? agendaService.getMyWeek : agendaService.getMyMonth;
@@ -29,6 +33,26 @@ export function VetAgenda() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agenda'))
       .finally(() => setLoading(false));
   }, [date, range]);
+
+  useEffect(() => {
+    if (!blockOpen) return;
+    const prev = document.activeElement as HTMLElement | null;
+    blockFirstButtonRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setBlockOpen(false);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      prev?.focus?.();
+    };
+  }, [blockOpen]);
+
+  useEffect(() => {
+    fetchAgenda();
+  }, [fetchAgenda]);
 
   // Load clinics list lazily when opening block modal
   useEffect(() => {
@@ -80,10 +104,10 @@ export function VetAgenda() {
             <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 border rounded p-2" />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-white border rounded p-1">
-              <button className={`px-2 py-1 rounded ${range==='day'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('day')}>Jour</button>
-              <button className={`px-2 py-1 rounded ${range==='week'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('week')}>Semaine</button>
-              <button className={`px-2 py-1 rounded ${range==='month'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('month')}>Mois</button>
+            <div className="flex items-center gap-1 bg-white border rounded p-1" role="group" aria-label="Période d'affichage">
+              <button aria-pressed={range==='day'} className={`px-2 py-1 rounded ${range==='day'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('day')}>Jour</button>
+              <button aria-pressed={range==='week'} className={`px-2 py-1 rounded ${range==='week'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('week')}>Semaine</button>
+              <button aria-pressed={range==='month'} className={`px-2 py-1 rounded ${range==='month'?'bg-blue-600 text-white':'text-gray-700'}`} onClick={() => setRange('month')}>Mois</button>
             </div>
             <button
               type="button"
@@ -119,15 +143,15 @@ export function VetAgenda() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-green-500 inline-block" aria-hidden /> Confirmé</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-yellow-400 inline-block" aria-hidden /> En attente</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-gray-400 inline-block" aria-hidden /> Terminé</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-300 inline-block" aria-hidden /> Blocage</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-yellow-500 inline-block" aria-hidden /> En attente</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-gray-500 inline-block" aria-hidden /> Terminé</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-500 inline-block" aria-hidden /> Blocage</span>
             </div>
           </div>
         </div>
 
-        {loading ? <div>Chargement…</div> : null}
-        {error ? <div className="text-red-600">{error}</div> : null}
+        {loading ? <div aria-live="polite">Chargement…</div> : null}
+        {error ? <div className="text-red-600" role="alert">{error}</div> : null}
 
         <div className="text-sm text-gray-600">{filteredItems.length} rendez-vous</div>
 
@@ -138,7 +162,7 @@ export function VetAgenda() {
                 <div className="font-medium mb-2">{hour}h</div>
                 <div className="space-y-2">
                   {rows.map((r) => (
-                    <AgendaRow key={r.id} item={r} />
+                    <AgendaRow key={r.id} item={r} onOpenModal={() => setOpenItem(r)} />
                   ))}
                 </div>
               </div>
@@ -150,22 +174,22 @@ export function VetAgenda() {
         )}
 
         {range === 'week' && (
-          <WeekGrid items={filteredItems} anchorDate={date} />
+          <WeekGrid items={filteredItems} anchorDate={date} setOpenItem={setOpenItem} />
         )}
 
         {range === 'month' && (
-          <MonthGrid items={filteredItems} anchorDate={date} />
+          <MonthGrid items={filteredItems} anchorDate={date} setOpenItem={setOpenItem} />
         )}
       </div>
 
       {blockOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-lg p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="block-modal-title">
+          <div ref={blockDialogRef} className="bg-white rounded-lg w-full max-w-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold">Bloquer un créneau</h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => setBlockOpen(false)}>✕</button>
+              <h3 id="block-modal-title" className="text-lg font-semibold">Bloquer un créneau</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setBlockOpen(false)} aria-label="Fermer la fenêtre">✕</button>
             </div>
-            {blockError ? <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{blockError}</div> : null}
+            {blockError ? <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2" role="alert">{blockError}</div> : null}
             <div className="space-y-3">
               <div>
                 <label htmlFor="block-clinic" className="block text-sm text-gray-700">Clinique</label>
@@ -199,7 +223,7 @@ export function VetAgenda() {
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button className="px-4 py-2 border rounded" onClick={() => setBlockOpen(false)} disabled={blockLoading}>Annuler</button>
+              <button ref={blockFirstButtonRef} className="px-4 py-2 border rounded" onClick={() => setBlockOpen(false)} disabled={blockLoading}>Annuler</button>
               <button
                 className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50"
                 disabled={blockLoading || !blockForm.clinicId || !blockForm.start || !blockForm.end}
@@ -228,11 +252,12 @@ export function VetAgenda() {
           </div>
         </div>
       )}
+      {openItem && <AgendaItemModal item={openItem} onClose={() => { setOpenItem(null); fetchAgenda(); }} />}
     </div>
   );
 }
 
-function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: string }) {
+function WeekGrid({ items, anchorDate, setOpenItem }: { items: AgendaItem[]; anchorDate: string; setOpenItem: (item: AgendaItem | null) => void; }) {
   // Build week days from Monday to Sunday based on anchorDate
   const anchor = new Date(anchorDate);
   const day = anchor.getDay() || 7;
@@ -247,8 +272,6 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
   const slotMinutes = 30;
   const rowsCount = ((endHour - startHour) * 60) / slotMinutes; // e.g., 20 rows for 30-min slots
   const rowHeight = 32; // px per slot row (responsive-friendly constant)
-
-  const [openItem, setOpenItem] = useState<AgendaItem | null>(null);
 
   const gridStyle = {
     gridTemplateColumns: '80px repeat(7, 1fr)',
@@ -349,7 +372,7 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
               blocks.push(
                 <div
                   key={`${it.id}-${i}-${seg.start}`}
-                  className="rounded bg-red-200 text-red-800 text-xs px-2 py-1 overflow-hidden text-left"
+                  className="rounded bg-red-300 text-red-900 text-xs px-2 py-1 overflow-hidden text-left"
                   style={{ gridColumn: `${i + 2} / ${i + 3}`, gridRow: `${seg.start} / ${seg.end}`, margin: 2 }}
                   title={content}
                 />
@@ -364,12 +387,12 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
         <div className="text-gray-600 mt-4">Aucun rendez-vous cette semaine.</div>
       ) : null}
 
-      {openItem && <AgendaItemModal item={openItem} onClose={() => setOpenItem(null)} />}
+      {/* The AgendaItemModal component will manage its own openItem state */}
     </div>
   );
 }
 
-function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: string }) {
+function MonthGrid({ items, anchorDate, setOpenItem }: { items: AgendaItem[]; anchorDate: string; setOpenItem: (item: AgendaItem | null) => void; }) {
   const anchor = new Date(anchorDate);
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const day = first.getDay() || 7;
@@ -377,8 +400,6 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
   gridStart.setDate(first.getDate() - (day - 1)); // Monday before or same week
   gridStart.setHours(0, 0, 0, 0);
   const cells = Array.from({ length: 42 }, (_, i) => new Date(gridStart.getTime() + i * 24 * 60 * 60 * 1000));
-
-  const [openItem, setOpenItem] = useState<AgendaItem | null>(null);
 
   const itemsByDay = cells.map((d) =>
     items.filter((it) => {
@@ -410,13 +431,13 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
                   const isBlocked = it.status === 'BLOCKED';
                   if (isBlocked) {
                     return (
-                      <div key={it.id} className="w-full text-left text-[11px] px-2 py-1 rounded bg-red-100 text-red-800">
+                      <div key={it.id} className="w-full text-left text-[11px] px-2 py-1 rounded bg-red-200 text-red-800">
                         {it.reason ? `Indispo — ${it.reason}` : 'Indisponible'}
                       </div>
                     );
                   }
                   const isCompleted = it.status === 'COMPLETED';
-                  const color = it.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 hover:bg-green-100' : it.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : isCompleted ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
+                  const color = it.status === 'CONFIRMED' ? 'bg-green-100 text-green-800 hover:bg-green-200' : it.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : isCompleted ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800 hover:bg-blue-200';
                   return (
                     <button
                       key={it.id}
@@ -435,7 +456,7 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
           );
         })}
       </div>
-      {openItem && <AgendaItemModal item={openItem} onClose={() => setOpenItem(null)} />}
+      {/* The AgendaItemModal component will manage its own openItem state */}
     </div>
   );
 }
@@ -446,6 +467,11 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
   const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completionForm, setCompletionForm] = useState<CompleteAppointmentData>({
+    notes: '',
+    report: '',
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -460,59 +486,114 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
     }
     return () => { cancelled = true; };
   }, [item.animal?.id]);
+
+  const handleComplete = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await appointmentsService.completeAppointment(item.id, completionForm);
+      onClose(); // This should trigger a refresh in the parent component
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to complete appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="appointment-details-title">
       <div className="bg-white rounded-lg w-full max-w-lg p-6">
         <div className="flex items-start justify-between mb-4">
-          <h3 className="text-lg font-semibold">Détails du rendez-vous</h3>
+          <h3 id="appointment-details-title" className="text-lg font-semibold">Détails du rendez-vous</h3>
           <button className="text-gray-500 hover:text-gray-700" onClick={onClose}>✕</button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="border rounded p-3">
-            <div className="font-medium mb-1">Animal</div>
-            <div className="text-sm text-gray-700">Nom: {item.animal?.name || '—'}</div>
-            <div className="text-sm text-gray-700">Espèce: {item.animal?.species || '—'}</div>
-            <div className="text-sm text-gray-700">Race: {item.animal?.breed || '—'}</div>
-            <div className="text-sm text-gray-700">Poids: {item.animal?.weightKg != null ? `${item.animal.weightKg} kg` : '—'}</div>
-            <div className="text-sm text-gray-700">Naissance: {item.animal?.birthdate ? new Date(item.animal.birthdate).toLocaleDateString() : '—'}</div>
-          </div>
-          <div className="border rounded p-3">
-            <div className="font-medium mb-1">Propriétaire</div>
-            <div className="text-sm text-gray-700">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : '—'}</div>
-            <div className="text-sm text-gray-700">{item.owner?.email || '—'}</div>
-          </div>
-          <div className="border rounded p-3 md:col-span-2">
-            <div className="font-medium mb-1">Rendez-vous</div>
-            <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-            <div className="text-sm text-gray-700">Statut: {item.status}</div>
-            <div className="mt-3">
-              <div className="font-medium">Historique de l'animal</div>
-              {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
-              {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
-              {history && (
-                <ul className="mt-2 space-y-1 text-sm">
-                  {history.appointments.slice(0, 5).map((apt) => (
-                    <li key={apt.id} className="flex items-center justify-between">
-                      <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
-                    </li>
-                  ))}
-                  {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
-                </ul>
-              )}
+        
+        {isCompleting ? (
+          <div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes internes (vétérinaire)</label>
+                <textarea
+                  id="notes"
+                  rows={4}
+                  className="mt-1 block w-full border rounded p-2"
+                  value={completionForm.notes}
+                  onChange={(e) => setCompletionForm({ ...completionForm, notes: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="report" className="block text-sm font-medium text-gray-700">Compte-rendu (visible par le propriétaire)</label>
+                <textarea
+                  id="report"
+                  rows={6}
+                  className="mt-1 block w-full border rounded p-2"
+                  value={completionForm.report}
+                  onChange={(e) => setCompletionForm({ ...completionForm, report: e.target.value })}
+                />
+              </div>
+            </div>
+            {error && <div className="text-red-600 mt-2" role="alert">{error}</div>}
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="px-4 py-2 border rounded" onClick={() => setIsCompleting(false)} disabled={loading}>Annuler</button>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={handleComplete} disabled={loading}>
+                {loading ? 'Sauvegarde...' : 'Sauvegarder et compléter'}
+              </button>
             </div>
           </div>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <button className="px-4 py-2 border rounded" onClick={onClose}>Fermer</button>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="border rounded p-3">
+                <div className="font-medium mb-1">Animal</div>
+                <div className="text-sm text-gray-700">Nom: {item.animal?.name || '—'}</div>
+                <div className="text-sm text-gray-700">Espèce: {item.animal?.species || '—'}</div>
+                <div className="text-sm text-gray-700">Race: {item.animal?.breed || '—'}</div>
+                <div className="text-sm text-gray-700">Poids: {item.animal?.weightKg != null ? `${item.animal.weightKg} kg` : '—'}</div>
+                <div className="text-sm text-gray-700">Naissance: {item.animal?.birthdate ? new Date(item.animal.birthdate).toLocaleDateString() : '—'}</div>
+              </div>
+              <div className="border rounded p-3">
+                <div className="font-medium mb-1">Propriétaire</div>
+                <div className="text-sm text-gray-700">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : '—'}</div>
+                <div className="text-sm text-gray-700">{item.owner?.email || '—'}</div>
+              </div>
+              <div className="border rounded p-3 md:col-span-2">
+                <div className="font-medium mb-1">Rendez-vous</div>
+                <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                <div className="text-sm text-gray-700">Statut: {item.status}</div>
+                <div className="mt-3">
+                  <div className="font-medium">Historique de l'animal</div>
+                  {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
+                  {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
+                  {history && (
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {history.appointments.slice(0, 5).map((apt) => (
+                        <li key={apt.id} className="flex items-center justify-between">
+                          <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
+                        </li>
+                      ))}
+                      {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="px-4 py-2 border rounded" onClick={onClose}>Fermer</button>
+              {item.status !== 'COMPLETED' && (
+                <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={() => setIsCompleting(true)}>
+                  Compléter le RDV
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function AgendaRow({ item }: { item: AgendaItem }) {
-  const [open, setOpen] = useState(false);
+function AgendaRow({ item, onOpenModal }: { item: AgendaItem; onOpenModal: () => void }) {
   const start = new Date(item.startsAt);
   const end = new Date(item.endsAt);
   return (
@@ -527,51 +608,12 @@ function AgendaRow({ item }: { item: AgendaItem }) {
           <div className="text-xs text-gray-600">{item.animal?.name || 'Animal'}</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+          <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
             {item.status}
           </span>
-          <button className="text-blue-600 text-sm hover:underline" onClick={() => setOpen(true)}>Détails</button>
+          <button className="text-blue-600 text-sm hover:underline" onClick={onOpenModal}>Détails</button>
         </div>
       </div>
-
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-lg p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold">Détails du rendez-vous</h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => setOpen(false)}>✕</button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="border rounded p-3">
-                <div className="font-medium mb-1">Animal</div>
-                <div className="text-sm text-gray-700">Nom: {item.animal?.name || '—'}</div>
-                <div className="text-sm text-gray-700">Espèce: {item.animal?.species || '—'}</div>
-                <div className="text-sm text-gray-700">Race: {item.animal?.breed || '—'}</div>
-                <div className="text-sm text-gray-700">Poids: {item.animal?.weightKg != null ? `${item.animal.weightKg} kg` : '—'}</div>
-                <div className="text-sm text-gray-700">Naissance: {item.animal?.birthdate ? new Date(item.animal.birthdate).toLocaleDateString() : '—'}</div>
-              </div>
-
-              <div className="border rounded p-3">
-                <div className="font-medium mb-1">Propriétaire</div>
-                <div className="text-sm text-gray-700">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : '—'}</div>
-                <div className="text-sm text-gray-700">{item.owner?.email || '—'}</div>
-              </div>
-
-              <div className="border rounded p-3 md:col-span-2">
-                <div className="font-medium mb-1">Rendez-vous</div>
-                <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="text-sm text-gray-700">Statut: {item.status}</div>
-                {/* futur: type de rendez-vous, motif, notes */}
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button className="px-4 py-2 border rounded" onClick={() => setOpen(false)}>Fermer</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

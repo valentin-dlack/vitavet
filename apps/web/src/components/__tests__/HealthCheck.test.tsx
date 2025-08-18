@@ -11,6 +11,7 @@ describe('HealthCheck', () => {
   });
 
   it('should show loading state initially', () => {
+    (fetch as any).mockImplementation(() => new Promise(() => {})); // Never resolves
     render(<HealthCheck />);
     expect(screen.getByTestId('health-loading')).toBeInTheDocument();
   });
@@ -58,7 +59,7 @@ describe('HealthCheck', () => {
     });
 
     render(<HealthCheck />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('health-error')).toBeInTheDocument();
     });

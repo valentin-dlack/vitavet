@@ -23,6 +23,16 @@ const cards = [
 		),
 	},
 	{
+		key: 'VET_REMINDERS',
+		roles: ['VET', 'ADMIN_CLINIC'],
+		to: '/vet/reminders',
+		title: 'Gestion des rappels',
+		desc: 'Voir et gérer les rappels de rendez-vous',
+		icon: (
+			<span className="text-3xl" aria-hidden>🔔</span>
+		),
+	},
+	{
 		key: 'OWNER_APPOINT',
 		roles: ['OWNER'],
 		to: '/clinics',

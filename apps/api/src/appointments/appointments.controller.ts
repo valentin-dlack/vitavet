@@ -17,6 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
+import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
 
 @Controller('appointments')
 @UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
@@ -81,6 +82,27 @@ export class AppointmentsController {
     return {
       ...appointment,
       message: 'Appointment confirmed successfully.',
+    };
+  }
+
+  @Patch(':id/complete')
+  @Roles('VET')
+  async completeAppointment(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Body() completeDto: CompleteAppointmentDto,
+  ) {
+    const appointment = await this.appointmentsService.completeAppointment(
+      id,
+      user.id,
+      completeDto,
+    );
+
+    // TODO: Send report email to owner
+
+    return {
+      ...appointment,
+      message: 'Appointment completed and report saved.',
     };
   }
 

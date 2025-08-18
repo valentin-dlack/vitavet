@@ -14,16 +14,18 @@ import { RolePanel } from './pages/RolePanel';
 import { VetAgenda } from './pages/VetAgenda';
 import { OwnerAppointments } from './pages/owner/OwnerAppointments';
 import { OwnerAnimals } from './pages/owner/OwnerAnimals';
+import { VetReminders } from './pages/vet/VetReminders';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:bg-white focus:border focus:border-blue-600 focus:px-3 focus:py-2 focus:rounded">Aller au contenu</a>
+        <header className="bg-white border-b" role="banner">
           <div className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-6">
-            <Link to="/" className="font-semibold">🐾 VitaVet</Link>
-            <nav className="text-sm text-gray-600 flex gap-4">
+            <Link to="/" className="font-semibold" aria-label="Accueil VitaVet">🐾 VitaVet</Link>
+            <nav className="text-sm text-gray-600 flex gap-4" aria-label="Navigation principale">
               <Link to="/clinics" className="hover:text-gray-900">Cliniques</Link>
               {isAuthenticated && ['ASV','VET','ADMIN_CLINIC','OWNER'].includes((user?.role || '')) ? (
                 <Link to="/panel" className="hover:text-gray-900">Panel</Link>
@@ -39,7 +41,7 @@ function App() {
             </nav>
           </div>
         </header>
-        <main>
+        <main id="main-content" role="main">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
@@ -80,6 +82,11 @@ function App() {
             <Route path="/vet/agenda" element={
               <ProtectedRoute requiredRole="VET">
                 <VetAgenda />
+              </ProtectedRoute>
+            } />
+            <Route path="/vet/reminders" element={
+              <ProtectedRoute anyOfRoles={['VET', 'ADMIN_CLINIC']}>
+                <VetReminders />
               </ProtectedRoute>
             } />
           </Routes>

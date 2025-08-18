@@ -42,6 +42,11 @@ export interface CreateAppointmentData {
   startsAt: string;
 }
 
+export interface CompleteAppointmentData {
+  notes?: string;
+  report?: string;
+}
+
 import { httpService } from './http.service';
 
 class AppointmentsService {
@@ -73,6 +78,10 @@ class AppointmentsService {
 
   async confirmAppointment(id: string): Promise<AppointmentResponse> {
     return httpService.patch<AppointmentResponse>(`/appointments/${id}/confirm`);
+  }
+
+  async completeAppointment(id: string, data: CompleteAppointmentData): Promise<AppointmentResponse> {
+    return httpService.patch<AppointmentResponse>(`/appointments/${id}/complete`, data);
   }
 }
 

@@ -75,4 +75,10 @@ export class Appointment {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column('text', { nullable: true })
+  notes?: string | null;
+
+  @Column('text', { nullable: true })
+  report?: string | null;
 }

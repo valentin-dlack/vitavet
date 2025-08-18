@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { appointmentsService, type CreateAppointmentData } from '../services/appointments.service';
 
 interface AppointmentModalProps {
@@ -17,6 +17,8 @@ interface AppointmentModalProps {
 export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }: AppointmentModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const dialogRef = useRef<HTMLDivElement | null>(null);
+	const firstFocusableRef = useRef<HTMLButtonElement | null>(null);
 	// animal selection (lazy import to avoid circulars in tests)
 	const [animals, setAnimals] = useState<{ id: string; name: string }[]>([]);
 	const [animalId, setAnimalId] = useState<string>('');
@@ -82,6 +84,24 @@ export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }:
 		}
 	};
 
+	useEffect(() => {
+		if (!isOpen) return;
+		const prev = document.activeElement as HTMLElement | null;
+		// focus first action when opening
+		firstFocusableRef.current?.focus();
+		// handle Escape to close
+		function onKey(e: KeyboardEvent) {
+			if (e.key === 'Escape') {
+				onClose();
+			}
+		}
+		document.addEventListener('keydown', onKey);
+		return () => {
+			document.removeEventListener('keydown', onKey);
+			prev?.focus?.();
+		};
+	}, [isOpen, onClose]);
+
 	if (!isOpen) return null;
 
 	const slotTime = new Date(slot.startsAt).toLocaleTimeString([], {
@@ -97,9 +117,9 @@ export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }:
 	});
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-			<div className="bg-white rounded-lg p-6 max-w-md w-full">
-				<h2 className="text-xl font-semibold mb-4">Confirmer le rendez-vous</h2>
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title">
+			<div ref={dialogRef} className="bg-white rounded-lg p-6 max-w-md w-full">
+				<h2 id="appointment-modal-title" className="text-xl font-semibold mb-4">Confirmer le rendez-vous</h2>
 				
 				<div className="mb-4">
 					<p className="text-gray-600 mb-2">Détails du rendez-vous :</p>
@@ -143,6 +163,7 @@ export function AppointmentModal({ isOpen, onClose, slot, clinicId, onSuccess }:
 						onClick={onClose}
 						disabled={loading}
 						className="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+						ref={firstFocusableRef}
 					>
 						Annuler
 					</button>

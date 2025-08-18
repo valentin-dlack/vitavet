@@ -13,6 +13,8 @@ import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { RemindersService } from '../reminders/reminders.service';
+import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
 
 export interface AppointmentResponse {
   id: string;
@@ -49,6 +51,7 @@ export class AppointmentsService {
     private readonly timeSlotRepository: Repository<TimeSlot>,
     @InjectRepository(UserClinicRole)
     private readonly ucrRepository: Repository<UserClinicRole>,
+    private readonly remindersService: RemindersService,
   ) {}
 
   async createAppointment(
@@ -106,6 +109,13 @@ export class AppointmentsService {
     const saved = await this.appointmentRepository.save(toSave);
     slot.isAvailable = false;
     await this.timeSlotRepository.save(slot);
+
+    // Plan reminders (fire-and-forget)
+    try {
+      await this.remindersService.planAppointmentReminders(saved.id);
+    } catch {
+      // ignore reminder planning failures in MVP
+    }
 
     return {
       id: saved.id,
@@ -229,6 +239,48 @@ export class AppointmentsService {
       clinicId: saved.clinicId,
       animalId: saved.animalId ?? undefined,
       vetUserId: saved.vetUserId ?? undefined,
+      typeId: saved.typeId ?? undefined,
+      status: saved.status,
+      startsAt: saved.startsAt.toISOString(),
+      endsAt: saved.endsAt.toISOString(),
+      createdAt: saved.createdAt.toISOString(),
+    };
+  }
+
+  async completeAppointment(
+    id: string,
+    vetUserId: string,
+    completeDto: CompleteAppointmentDto,
+  ): Promise<AppointmentResponse> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.vetUserId !== vetUserId) {
+      throw new ForbiddenException(
+        'You can only complete your own appointments',
+      );
+    }
+
+    if (appointment.status === 'COMPLETED') {
+      throw new ConflictException('Appointment is already completed');
+    }
+
+    appointment.notes = completeDto.notes ?? appointment.notes;
+    appointment.report = completeDto.report ?? appointment.report;
+    appointment.status = 'COMPLETED';
+
+    const saved = await this.appointmentRepository.save(appointment);
+
+    return {
+      id: saved.id,
+      clinicId: saved.clinicId,
+      animalId: saved.animalId,
+      vetUserId: saved.vetUserId,
       typeId: saved.typeId ?? undefined,
       status: saved.status,
       startsAt: saved.startsAt.toISOString(),

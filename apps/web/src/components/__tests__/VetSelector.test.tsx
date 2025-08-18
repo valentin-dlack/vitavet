@@ -79,6 +79,7 @@ describe('VetSelector', () => {
   });
 
   it('should render error state when API call fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockClinicsService.getVetsByClinic.mockRejectedValue(new Error('API Error'));
 
     render(<VetSelector {...defaultProps} />);
@@ -86,6 +87,7 @@ describe('VetSelector', () => {
     await waitFor(() => {
       expect(screen.getByText('Erreur: API Error')).toBeInTheDocument();
     });
+    consoleErrorSpy.mockRestore();
   });
 
   it('should be disabled when disabled prop is true', async () => {

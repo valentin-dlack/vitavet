@@ -57,49 +57,54 @@ export function Pagination({
   };
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      <div className="text-sm text-gray-700">
+    <nav className={`flex items-center justify-between ${className}`} aria-label="Pagination">
+      <p className="text-sm text-gray-700">
         Affichage de <span className="font-medium">{startItem}</span> à{' '}
         <span className="font-medium">{endItem}</span> sur{' '}
         <span className="font-medium">{totalItems}</span> résultats
-      </div>
+      </p>
 
       <div className="flex items-center space-x-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Page précédente"
         >
           Précédent
         </button>
 
-        <div className="flex items-center space-x-1">
+        <ul className="flex items-center space-x-1" role="list">
           {getPageNumbers().map((page, index) => (
-            <button
-              key={index}
-              onClick={() => typeof page === 'number' && onPageChange(page)}
-              disabled={page === '...'}
-              className={`px-3 py-2 text-sm font-medium rounded-md ${
-                page === currentPage
-                  ? 'bg-blue-600 text-white'
-                  : page === '...'
-                  ? 'text-gray-400 cursor-default'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {page}
-            </button>
+            <li key={index}>
+              <button
+                onClick={() => typeof page === 'number' && onPageChange(page)}
+                disabled={page === '...'}
+                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                  page === currentPage
+                    ? 'bg-blue-600 text-white'
+                    : page === '...'
+                    ? 'text-gray-400 cursor-default'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-current={page === currentPage ? 'page' : undefined}
+                aria-label={typeof page === 'number' ? `Aller à la page ${page}` : 'Suite des pages'}
+              >
+                {page}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
 
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Page suivante"
         >
           Suivant
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

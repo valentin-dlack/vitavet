@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { RemindersModule } from '../reminders/reminders.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
       TimeSlot,
       UserClinicRole,
     ]),
+    RemindersModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
