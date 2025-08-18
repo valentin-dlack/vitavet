@@ -7,7 +7,7 @@ export interface ReminderInstance {
   appointmentId: string;
   sendAt: string;
   status: 'SCHEDULED' | 'SENT' | 'FAILED' | 'CANCELLED';
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

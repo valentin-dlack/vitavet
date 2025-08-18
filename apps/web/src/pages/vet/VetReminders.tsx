@@ -42,7 +42,7 @@ export function VetReminders() {
           <select
             id="status-filter"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as ReminderInstance['status'])}
             className="border rounded p-2"
           >
             <option value="">All</option>
