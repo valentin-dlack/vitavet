@@ -26,6 +26,11 @@ import { NotificationLog } from './notifications/entities/notification-log.entit
 import { TimeSlot } from './slots/entities/time-slot.entity';
 import { AnimalsModule } from './animals/animals.module';
 import { Service as ClinicService } from './clinics/entities/service.entity';
+import { AdminModule } from './admin/admin.module';
+import { DocumentsModule } from './documents/documents.module';
+import { Document } from './documents/entities/document.entity';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -46,6 +51,7 @@ import { Service as ClinicService } from './clinics/entities/service.entity';
         ReminderInstance,
         NotificationLog,
         TimeSlot,
+        Document,
       ],
     }),
     ThrottlerModule.forRoot([
@@ -62,6 +68,13 @@ import { Service as ClinicService } from './clinics/entities/service.entity';
     AppointmentsModule,
     AnimalsModule,
     AgendaModule,
+    AdminModule,
+    DocumentsModule,
+
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'uploads'),
+      serveRoot: '/uploads/',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

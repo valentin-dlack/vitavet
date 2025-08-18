@@ -18,6 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
+import { Document } from '../documents/entities/document.entity';
 
 @Controller('appointments')
 @UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
@@ -69,6 +70,12 @@ export class AppointmentsController {
       limitNum,
       offsetNum,
     );
+  }
+
+  @Get(':id/documents')
+  @Roles('VET', 'OWNER') // Or maybe ASV, ADMIN_CLINIC?
+  async getAppointmentDocuments(@Param('id') id: string): Promise<Document[]> {
+    return this.appointmentsService.findDocumentsByAppointmentId(id);
   }
 
   @Patch(':id/confirm')

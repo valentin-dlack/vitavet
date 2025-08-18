@@ -11,7 +11,7 @@ export class UserClinicRole {
   clinicId!: string;
 
   @PrimaryColumn('text')
-  role!: 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC';
+  role!: 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC' | 'WEBMASTER';
 
   @ManyToOne(() => User, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })

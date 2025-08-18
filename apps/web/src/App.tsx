@@ -15,9 +15,12 @@ import { VetAgenda } from './pages/VetAgenda';
 import { OwnerAppointments } from './pages/owner/OwnerAppointments';
 import { OwnerAnimals } from './pages/owner/OwnerAnimals';
 import { VetReminders } from './pages/vet/VetReminders';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminClinics } from './pages/admin/AdminClinics';
 
 function App() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, roles } = useAuth();
+  const userRoles = [...(roles || []), user?.role].filter(Boolean) as string[];
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -27,7 +30,7 @@ function App() {
             <Link to="/" className="font-semibold" aria-label="Accueil VitaVet">🐾 VitaVet</Link>
             <nav className="text-sm text-gray-600 flex gap-4" aria-label="Navigation principale">
               <Link to="/clinics" className="hover:text-gray-900">Cliniques</Link>
-              {isAuthenticated && ['ASV','VET','ADMIN_CLINIC','OWNER'].includes((user?.role || '')) ? (
+              {isAuthenticated && ['ASV','VET','ADMIN_CLINIC','OWNER','WEBMASTER'].some(r => userRoles.includes(r)) ? (
                 <Link to="/panel" className="hover:text-gray-900">Panel</Link>
               ) : null}
               {isAuthenticated ? (
@@ -65,7 +68,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/panel" element={
-              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC","OWNER"]}>
+              <ProtectedRoute anyOfRoles={["ASV","VET","ADMIN_CLINIC","OWNER","WEBMASTER"]}>
                 <RolePanel />
               </ProtectedRoute>
             } />
@@ -87,6 +90,16 @@ function App() {
             <Route path="/vet/reminders" element={
               <ProtectedRoute anyOfRoles={['VET', 'ADMIN_CLINIC']}>
                 <VetReminders />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clinics" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminClinics />
               </ProtectedRoute>
             } />
           </Routes>

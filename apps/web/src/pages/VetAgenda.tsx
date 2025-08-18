@@ -3,6 +3,8 @@ import { agendaService, type AgendaItem } from '../services/agenda.service';
 import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
 import { appointmentsService, type CompleteAppointmentData } from '../services/appointments.service';
+import { documentsService } from '../services/documents.service';
+import type { Document } from '../entities/document.entity';
 
 function toYmd(d: Date) {
   return d.toISOString().split('T')[0];
@@ -468,6 +470,9 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [completionForm, setCompletionForm] = useState<CompleteAppointmentData>({
     notes: '',
     report: '',
@@ -483,9 +488,16 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
         .then((h) => { if (!cancelled) setHistory(h); })
         .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur'); })
         .finally(() => { if (!cancelled) setLoading(false); });
+
+      documentsService.getDocumentsForAppointment(item.id).then((data) => {
+        setDocuments(Array.isArray(data) ? data : []);
+      }).catch((e) => {
+        console.error('Error fetching documents:', e);
+        setDocuments([]);
+      });
     }
     return () => { cancelled = true; };
-  }, [item.animal?.id]);
+  }, [item.animal?.id, item.id]);
 
   const handleComplete = async () => {
     setLoading(true);
@@ -497,6 +509,29 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
       setError(e instanceof Error ? e.message : 'Failed to complete appointment');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      console.log('Starting file upload...');
+      const newDoc = await documentsService.uploadDocument(item.id, file);
+      console.log('Upload successful, new document:', newDoc);
+      setDocuments((prev) => {
+        console.log('Previous documents:', prev);
+        const updated = [newDoc, ...prev];
+        console.log('Updated documents:', updated);
+        return updated;
+      });
+      setFile(null);
+    } catch (e) {
+      console.error('Upload failed:', e);
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -578,6 +613,64 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
                 </div>
               </div>
             </div>
+
+            {isCompleting ? (
+              <div className="mt-4">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes internes (vétérinaire)</label>
+                    <textarea
+                      id="notes"
+                      rows={4}
+                      className="mt-1 block w-full border rounded p-2"
+                      value={completionForm.notes}
+                      onChange={(e) => setCompletionForm({ ...completionForm, notes: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="report" className="block text-sm font-medium text-gray-700">Compte-rendu (visible par le propriétaire)</label>
+                    <textarea
+                      id="report"
+                      rows={6}
+                      className="mt-1 block w-full border rounded p-2"
+                      value={completionForm.report}
+                      onChange={(e) => setCompletionForm({ ...completionForm, report: e.target.value })}
+                    />
+                  </div>
+                </div>
+                {error && <div className="text-red-600 mt-2" role="alert">{error}</div>}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button className="px-4 py-2 border rounded" onClick={() => setIsCompleting(false)} disabled={loading}>Annuler</button>
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={handleComplete} disabled={loading}>
+                    {loading ? 'Sauvegarde...' : 'Sauvegarder et compléter'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {item.status === 'COMPLETED' && (
+              <div className="mt-4">
+                <h3 className="font-medium mb-2">Documents</h3>
+                <div className="space-y-2">
+                  {documents && documents.length > 0 ? (
+                    documents.map(doc => doc ? (
+                      <div key={doc.id} className="text-sm">
+                        <a href={`/uploads/${doc.storagePath.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer">{doc.filename}</a>
+                      </div>
+                    ) : null)
+                  ) : (
+                    <p className="text-sm text-gray-500">Aucun document.</p>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <input type="file" className="text-sm" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} />
+                  <button onClick={handleFileUpload} disabled={uploading || !file} className="ml-2 px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300">
+                    {uploading ? 'Envoi...' : 'Envoyer'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-4 flex justify-end gap-2">
               <button className="px-4 py-2 border rounded" onClick={onClose}>Fermer</button>
               {item.status !== 'COMPLETED' && (

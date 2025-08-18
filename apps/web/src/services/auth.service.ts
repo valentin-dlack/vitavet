@@ -1,3 +1,5 @@
+import { jwtDecode } from 'jwt-decode';
+
 export interface RegisterData {
   email: string;
   password: string;
@@ -19,6 +21,14 @@ export interface User {
   role?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface DecodedToken {
+  sub: string;
+  email: string;
+  roles: string[];
+  iat: number;
+  exp: number;
 }
 
 export interface AuthResponse {
@@ -91,6 +101,18 @@ class AuthService {
   getUser(): User | null {
     const raw = localStorage.getItem(this.userKey);
     return raw ? (JSON.parse(raw) as User) : null;
+  }
+
+  getUserRoles(): string[] {
+    const token = this.getToken();
+    if (!token) return [];
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      return decoded.roles || [];
+    } catch (e) {
+      console.error('Failed to decode token', e);
+      return [];
+    }
   }
 
   removeUser(): void {

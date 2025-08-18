@@ -36,3 +36,8 @@ Marks an appointment as completed and saves consultation notes and a report. Thi
 - `403 Forbidden`: If the user is not the veterinarian assigned to the appointment.
 - `404 Not Found`: If the appointment with the specified ID does not exist.
 - `409 Conflict`: If the appointment has already been completed.
+
+- `GET /appointments/:id/documents`
+  - **Description**: Retrieves all documents for a specific appointment.
+  - **Roles**: `VET`, `OWNER`
+  - **Response**: `Document[]`
