@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { RemindersService } from '../reminders/reminders.service';
 import { AppointmentsService } from './appointments.service';
 import { Appointment } from './entities/appointment.entity';
 import { User } from '../users/entities/user.entity';
@@ -55,6 +56,10 @@ describe('AppointmentsService', () => {
         { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
         { provide: getRepositoryToken(TimeSlot), useValue: timeSlotRepoMock },
         { provide: getRepositoryToken(UserClinicRole), useValue: ucrRepoMock },
+        {
+          provide: RemindersService,
+          useValue: { planAppointmentReminders: jest.fn() },
+        },
       ],
     }).compile();
 

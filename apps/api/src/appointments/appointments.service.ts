@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { RemindersService } from '../reminders/reminders.service';
 
 export interface AppointmentResponse {
   id: string;
@@ -49,6 +50,7 @@ export class AppointmentsService {
     private readonly timeSlotRepository: Repository<TimeSlot>,
     @InjectRepository(UserClinicRole)
     private readonly ucrRepository: Repository<UserClinicRole>,
+    private readonly remindersService: RemindersService,
   ) {}
 
   async createAppointment(
@@ -106,6 +108,13 @@ export class AppointmentsService {
     const saved = await this.appointmentRepository.save(toSave);
     slot.isAvailable = false;
     await this.timeSlotRepository.save(slot);
+
+    // Plan reminders (fire-and-forget)
+    try {
+      await this.remindersService.planAppointmentReminders(saved.id);
+    } catch {
+      // ignore reminder planning failures in MVP
+    }
 
     return {
       id: saved.id,

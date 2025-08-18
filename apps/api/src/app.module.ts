@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RemindersModule } from './reminders/reminders.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -27,6 +29,8 @@ import { Service as ClinicService } from './clinics/entities/service.entity';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    RemindersModule,
     TypeOrmModule.forRoot({
       ...databaseConfig,
       entities: [
