@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AnimalsService } from './animals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,5 +19,15 @@ export class AnimalsController {
     @Query('clinicId') clinicId: string,
   ) {
     return this.animalsService.findByOwnerAndClinic(user.id, clinicId);
+  }
+
+  // US-05a: View animal history
+  // Access: OWNER of the animal, or VET/ASV/ADMIN_CLINIC of the same clinic
+  @Get(':animalId/history')
+  async getAnimalHistory(
+    @CurrentUser() user: User,
+    @Param('animalId') animalId: string,
+  ) {
+    return this.animalsService.getAnimalHistory(user.id, animalId);
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { agendaService, type AgendaItem } from '../services/agenda.service';
+import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
 
 function toYmd(d: Date) {
@@ -418,6 +419,23 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
 function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => void }) {
   const start = new Date(item.startsAt);
   const end = new Date(item.endsAt);
+  const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (item.animal?.id) {
+      setLoading(true);
+      setError(null);
+      animalsService
+        .getHistory(item.animal.id)
+        .then((h) => { if (!cancelled) setHistory(h); })
+        .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    }
+    return () => { cancelled = true; };
+  }, [item.animal?.id]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg w-full max-w-lg p-6">
@@ -443,6 +461,22 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
             <div className="font-medium mb-1">Rendez-vous</div>
             <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
             <div className="text-sm text-gray-700">Statut: {item.status}</div>
+            <div className="mt-3">
+              <div className="font-medium">Historique de l'animal</div>
+              {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
+              {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
+              {history && (
+                <ul className="mt-2 space-y-1 text-sm">
+                  {history.appointments.slice(0, 5).map((apt) => (
+                    <li key={apt.id} className="flex items-center justify-between">
+                      <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
+                    </li>
+                  ))}
+                  {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">

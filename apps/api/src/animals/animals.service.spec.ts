@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AnimalsService } from './animals.service';
 import { Animal } from './entities/animal.entity';
+import { Appointment } from '../appointments/entities/appointment.entity';
+import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 
 describe('AnimalsService', () => {
   let service: AnimalsService;
@@ -17,6 +19,8 @@ describe('AnimalsService', () => {
       providers: [
         AnimalsService,
         { provide: getRepositoryToken(Animal), useValue: repoMock },
+        { provide: getRepositoryToken(Appointment), useValue: {} },
+        { provide: getRepositoryToken(UserClinicRole), useValue: {} },
       ],
     }).compile();
 
