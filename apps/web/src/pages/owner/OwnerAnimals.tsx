@@ -11,9 +11,8 @@ export function OwnerAnimals() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    // no clinic filter => all animals for owner
     animalsService
-      .getMyAnimals({ allClinics: true })
+      .getMyAnimals('')
       .then(setAnimals)
       .catch((e) => setError(e instanceof Error ? e.message : 'Erreur'))
       .finally(() => setLoading(false));
