@@ -27,7 +27,9 @@ export class AnimalsService {
     if (clinicId) {
       return this.animalRepository.find({ where: { ownerId, clinicId } });
     }
-    return this.animalRepository.find({ where: { ownerId } });
+    clinicId: string,
+  ): Promise<Animal[]> {
+    return this.animalRepository.find({ where: { ownerId, clinicId } });
   }
 
   async getAnimalHistory(
