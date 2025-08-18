@@ -98,6 +98,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
             errors.firstName ? 'border-red-500' : 'border-gray-300'
           }`}
           aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+          aria-invalid={!!errors.firstName}
         />
         {errors.firstName && (
           <p id="firstName-error" className="mt-1 text-sm text-red-600" role="alert">
@@ -120,6 +121,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
             errors.lastName ? 'border-red-500' : 'border-gray-300'
           }`}
           aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+          aria-invalid={!!errors.lastName}
         />
         {errors.lastName && (
           <p id="lastName-error" className="mt-1 text-sm text-red-600" role="alert">
@@ -142,6 +144,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
             errors.email ? 'border-red-500' : 'border-gray-300'
           }`}
           aria-describedby={errors.email ? 'email-error' : undefined}
+          aria-invalid={!!errors.email}
         />
         {errors.email && (
           <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
@@ -164,6 +167,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
             errors.password ? 'border-red-500' : 'border-gray-300'
           }`}
           aria-describedby={errors.password ? 'password-error' : undefined}
+          aria-invalid={!!errors.password}
         />
         {errors.password && (
           <p id="password-error" className="mt-1 text-sm text-red-600" role="alert">

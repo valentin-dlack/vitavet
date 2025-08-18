@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../../App';
 import * as useAuthHook from '../../hooks/useAuth';
+import { appointmentsService } from '../../services/appointments.service';
+
+vi.mock('../../services/appointments.service');
 
 describe('App routing RBAC', () => {
   it('redirects to login when visiting protected pages unauthenticated', () => {
@@ -12,12 +15,13 @@ describe('App routing RBAC', () => {
     expect(screen.getByRole('heading', { name: 'Se connecter' })).toBeInTheDocument();
   });
 
-  it('allows ASV access to /asv/pending via anyOfRoles', () => {
+  it('allows ASV access to /asv/pending via anyOfRoles', async () => {
     vi.spyOn(useAuthHook, 'useAuth').mockReturnValue({ user: { role: 'ASV' }, isAuthenticated: true } as any);
+    vi.mocked(appointmentsService.getPendingAppointments).mockResolvedValue({ appointments: [], total: 0 });
     window.history.pushState({}, '', '/asv/pending');
     render(<App />);
     // We should be on pending appointments page; assert on title fragment
-    expect(screen.getByText(/RDV en attente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/RDV en attente/i)).toBeInTheDocument();
   });
 
   it('blocks OWNER from /vet/agenda requiring VET', () => {

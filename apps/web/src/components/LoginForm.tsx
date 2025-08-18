@@ -78,7 +78,7 @@ export function LoginForm() {
           required
         />
         {errors.email ? (
-          <p id="email-error" className="text-red-600 text-sm mt-1">{errors.email}</p>
+          <p id="email-error" className="text-red-600 text-sm mt-1" role="alert">{errors.email}</p>
         ) : null}
       </div>
 
@@ -96,7 +96,7 @@ export function LoginForm() {
           required
         />
         {errors.password ? (
-          <p id="password-error" className="text-red-600 text-sm mt-1">{errors.password}</p>
+          <p id="password-error" className="text-red-600 text-sm mt-1" role="alert">{errors.password}</p>
         ) : null}
       </div>
 

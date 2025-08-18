@@ -18,14 +18,14 @@ export class RemindersController {
   }
 
   @Post('run-due')
-  @Roles('ADMIN_CLINIC')
+  @Roles('ADMIN_CLINIC', 'VET')
   async runDue() {
     const processed = await this.remindersService.processDueReminders();
     return { processed };
   }
 
   @Get('instances')
-  @Roles('ADMIN_CLINIC')
+  @Roles('ADMIN_CLINIC', 'VET')
   async listInstances(
     @Query('status') status?: 'SCHEDULED' | 'SENT' | 'FAILED' | 'CANCELLED',
   ) {
