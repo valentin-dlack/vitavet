@@ -517,13 +517,9 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
     setUploading(true);
     setError(null);
     try {
-      console.log('Starting file upload...');
       const newDoc = await documentsService.uploadDocument(item.id, file);
-      console.log('Upload successful, new document:', newDoc);
       setDocuments((prev) => {
-        console.log('Previous documents:', prev);
         const updated = [newDoc, ...prev];
-        console.log('Updated documents:', updated);
         return updated;
       });
       setFile(null);
