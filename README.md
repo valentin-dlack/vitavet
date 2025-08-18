@@ -50,6 +50,21 @@ cd apps/web && pnpm dev
 docker compose up -d
 ```
 
+### Tests et Couverture
+```bash
+# Lancer tous les tests
+pnpm test
+
+# Générer les rapports de couverture
+pnpm coverage
+
+# Rapports de couverture détaillés
+pnpm coverage:summary          # Rapport markdown complet
+pnpm coverage:summary:simple   # Rapport simplifié pour GitHub
+```
+
+📊 **Rapports de couverture** : Consultez [docs/coverage-example.md](docs/coverage-example.md) pour un exemple de sortie.
+
 ## 🚀 Déploiement Railway
 
 ### 1. API
