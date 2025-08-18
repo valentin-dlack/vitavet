@@ -32,6 +32,26 @@ const cards = [
 			<span className="text-3xl" aria-hidden>🩺</span>
 		),
 	},
+	{
+		key: 'OWNER_MY_APPTS',
+		roles: ['OWNER'],
+		to: '/owner/appointments',
+		title: 'Mes RDV',
+		desc: 'Voir mes rendez-vous à venir',
+		icon: (
+			<span className="text-3xl" aria-hidden>🗓️</span>
+		),
+	},
+	{
+		key: 'OWNER_MY_ANIMALS',
+		roles: ['OWNER'],
+		to: '/owner/animals',
+		title: 'Mes animaux',
+		desc: 'Historique et gestion de mes animaux',
+		icon: (
+			<span className="text-3xl" aria-hidden>🐶</span>
+		),
+	},
 ];
 
 export function RolePanel() {

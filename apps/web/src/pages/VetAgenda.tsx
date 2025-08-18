@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { agendaService, type AgendaItem } from '../services/agenda.service';
+import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
 
 function toYmd(d: Date) {
@@ -17,6 +18,7 @@ export function VetAgenda() {
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockError, setBlockError] = useState<string | null>(null);
   const [clinics, setClinics] = useState<Array<{ id: string; name: string; city?: string; postcode?: string }>>([]);
+  const [showBlocks, setShowBlocks] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -56,15 +58,17 @@ export function VetAgenda() {
     setDate(toYmd(shifted));
   }
 
+  const filteredItems = useMemo(() => items.filter((it) => showBlocks || it.status !== 'BLOCKED'), [items, showBlocks]);
+
   const byHour = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
-    items.forEach((it) => {
+    filteredItems.forEach((it) => {
       const h = new Date(it.startsAt).toLocaleTimeString([], { hour: '2-digit' });
       if (!map.has(h)) map.set(h, []);
       map.get(h)!.push(it);
     });
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [items]);
+  }, [filteredItems]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -106,10 +110,26 @@ export function VetAgenda() {
           </div>
         </div>
 
+        {/* Filters & Legend (separate row for better spacing) */}
+        <div className="mb-3 p-3 bg-white border rounded">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <input id="toggle-blocks" type="checkbox" checked={showBlocks} onChange={(e) => setShowBlocks(e.target.checked)} />
+              <label htmlFor="toggle-blocks">Afficher les blocs</label>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-green-500 inline-block" aria-hidden /> Confirmé</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-yellow-400 inline-block" aria-hidden /> En attente</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-gray-400 inline-block" aria-hidden /> Terminé</span>
+              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-300 inline-block" aria-hidden /> Blocage</span>
+            </div>
+          </div>
+        </div>
+
         {loading ? <div>Chargement…</div> : null}
         {error ? <div className="text-red-600">{error}</div> : null}
 
-        <div className="text-sm text-gray-600">{items.length} rendez-vous</div>
+        <div className="text-sm text-gray-600">{filteredItems.length} rendez-vous</div>
 
         {range === 'day' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
@@ -130,11 +150,11 @@ export function VetAgenda() {
         )}
 
         {range === 'week' && (
-          <WeekGrid items={items} anchorDate={date} />
+          <WeekGrid items={filteredItems} anchorDate={date} />
         )}
 
         {range === 'month' && (
-          <MonthGrid items={items} anchorDate={date} />
+          <MonthGrid items={filteredItems} anchorDate={date} />
         )}
       </div>
 
@@ -299,11 +319,14 @@ function WeekGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: stri
             if (dayIndex < 0 || dayIndex > 6) return null; // outside current week
             const { start, end } = computeRowSpan(s, e);
             const content = `${it.animal?.name || 'RDV'} — ${it.status}`;
+            const statusClass = it.status === 'COMPLETED'
+              ? 'bg-gray-400/80 hover:bg-gray-500'
+              : 'bg-blue-500/80 hover:bg-blue-600';
             return (
               <button
                 type="button"
                 key={`${it.id}-${start}`}
-                className="rounded bg-blue-500/80 text-white text-xs px-2 py-1 overflow-hidden cursor-pointer hover:bg-blue-600 text-left"
+                className={`rounded ${statusClass} text-white text-xs px-2 py-1 overflow-hidden cursor-pointer text-left`}
                 style={{ gridColumn: `${Number(dayIndex) + 2} / ${Number(dayIndex) + 3}`, gridRow: `${start} / ${end}`, margin: 2 }}
                 title={content}
                 onClick={() => setOpenItem(it)}
@@ -392,10 +415,12 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
                       </div>
                     );
                   }
+                  const isCompleted = it.status === 'COMPLETED';
+                  const color = it.status === 'CONFIRMED' ? 'bg-green-50 text-green-700 hover:bg-green-100' : it.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : isCompleted ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100';
                   return (
                     <button
                       key={it.id}
-                      className="w-full text-left text-[11px] px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      className={`w-full text-left text-[11px] px-2 py-1 rounded ${color}`}
                       onClick={() => setOpenItem(it)}
                     >
                       {label}
@@ -418,6 +443,23 @@ function MonthGrid({ items, anchorDate }: { items: AgendaItem[]; anchorDate: str
 function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => void }) {
   const start = new Date(item.startsAt);
   const end = new Date(item.endsAt);
+  const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (item.animal?.id) {
+      setLoading(true);
+      setError(null);
+      animalsService
+        .getHistory(item.animal.id)
+        .then((h) => { if (!cancelled) setHistory(h); })
+        .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    }
+    return () => { cancelled = true; };
+  }, [item.animal?.id]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg w-full max-w-lg p-6">
@@ -443,6 +485,22 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
             <div className="font-medium mb-1">Rendez-vous</div>
             <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
             <div className="text-sm text-gray-700">Statut: {item.status}</div>
+            <div className="mt-3">
+              <div className="font-medium">Historique de l'animal</div>
+              {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
+              {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
+              {history && (
+                <ul className="mt-2 space-y-1 text-sm">
+                  {history.appointments.slice(0, 5).map((apt) => (
+                    <li key={apt.id} className="flex items-center justify-between">
+                      <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
+                    </li>
+                  ))}
+                  {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
@@ -469,7 +527,7 @@ function AgendaRow({ item }: { item: AgendaItem }) {
           <div className="text-xs text-gray-600">{item.animal?.name || 'Animal'}</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded ${item.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+          <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
             {item.status}
           </span>
           <button className="text-blue-600 text-sm hover:underline" onClick={() => setOpen(true)}>Détails</button>

@@ -83,4 +83,15 @@ export class AppointmentsController {
       message: 'Appointment confirmed successfully.',
     };
   }
+
+  // Owner: appointments for their animals (optional status filter)
+  @Get('me')
+  @Roles('OWNER')
+  async getMyAppointments(
+    @CurrentUser() user: User,
+    @Query('status')
+    status?: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED',
+  ) {
+    return this.appointmentsService.getOwnerAppointments(user.id, status);
+  }
 }
