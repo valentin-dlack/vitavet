@@ -6,7 +6,11 @@ import { AppointmentsService } from './appointments.service';
 import { Appointment } from './entities/appointment.entity';
 import { User } from '../users/entities/user.entity';
 import { Animal } from '../animals/entities/animal.entity';
-import { ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 
@@ -372,22 +376,35 @@ describe('AppointmentsService', () => {
     it('should complete an appointment with notes and report', async () => {
       const appointmentId = 'apt-1';
       const vetId = 'vet-1';
-      const completeDto = { notes: 'Internal notes', report: 'Consultation report' };
-      const appointment = { 
-        id: appointmentId, 
-        vetUserId: vetId, 
+      const completeDto = {
+        notes: 'Internal notes',
+        report: 'Consultation report',
+      };
+      const appointment = {
+        id: appointmentId,
+        vetUserId: vetId,
         status: 'CONFIRMED',
         startsAt: new Date(),
         endsAt: new Date(),
         createdAt: new Date(),
       };
 
-      jest.spyOn(appointmentRepo, 'findOne').mockResolvedValue(appointment as any);
-      jest.spyOn(appointmentRepo, 'save').mockImplementation(async (apt) => apt as any);
+      jest
+        .spyOn(appointmentRepo, 'findOne')
+        .mockResolvedValue(appointment as any);
+      jest
+        .spyOn(appointmentRepo, 'save')
+        .mockImplementation((apt: Appointment) => Promise.resolve({ ...apt }));
 
-      const result = await service.completeAppointment(appointmentId, vetId, completeDto);
+      const result = await service.completeAppointment(
+        appointmentId,
+        vetId,
+        completeDto,
+      );
 
-      expect(appointmentRepo.findOne).toHaveBeenCalledWith({ where: { id: appointmentId } });
+      expect(appointmentRepo.findOne).toHaveBeenCalledWith({
+        where: { id: appointmentId },
+      });
       expect(appointmentRepo.save).toHaveBeenCalledWith({
         ...appointment,
         notes: completeDto.notes,
@@ -399,19 +416,33 @@ describe('AppointmentsService', () => {
 
     it('should throw NotFoundException if appointment does not exist', async () => {
       jest.spyOn(appointmentRepo, 'findOne').mockResolvedValue(null);
-      await expect(service.completeAppointment('apt-1', 'vet-1', {})).rejects.toThrow(NotFoundException);
+      await expect(
+        service.completeAppointment('apt-1', 'vet-1', {}),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if vet is not assigned to the appointment', async () => {
       const appointment = { id: 'apt-1', vetUserId: 'another-vet-id' };
-      jest.spyOn(appointmentRepo, 'findOne').mockResolvedValue(appointment as any);
-      await expect(service.completeAppointment('apt-1', 'vet-1', {})).rejects.toThrow(ForbiddenException);
+      jest
+        .spyOn(appointmentRepo, 'findOne')
+        .mockResolvedValue(appointment as any);
+      await expect(
+        service.completeAppointment('apt-1', 'vet-1', {}),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ConflictException if appointment is already completed', async () => {
-      const appointment = { id: 'apt-1', vetUserId: 'vet-1', status: 'COMPLETED' };
-      jest.spyOn(appointmentRepo, 'findOne').mockResolvedValue(appointment as any);
-      await expect(service.completeAppointment('apt-1', 'vet-1', {})).rejects.toThrow(ConflictException);
+      const appointment = {
+        id: 'apt-1',
+        vetUserId: 'vet-1',
+        status: 'COMPLETED',
+      };
+      jest
+        .spyOn(appointmentRepo, 'findOne')
+        .mockResolvedValue(appointment as any);
+      await expect(
+        service.completeAppointment('apt-1', 'vet-1', {}),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });
