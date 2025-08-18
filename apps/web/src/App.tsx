@@ -17,6 +17,11 @@ import { OwnerAnimals } from './pages/owner/OwnerAnimals';
 import { VetReminders } from './pages/vet/VetReminders';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminClinics } from './pages/admin/AdminClinics';
+import { AdminCreateClinic } from './pages/admin/AdminCreateClinic';
+import { AdminCreateUser } from './pages/admin/AdminCreateUser';
+import { AdminClinicRoles } from './pages/admin/AdminClinicRoles';
+import { AdminEditUser } from './pages/admin/AdminEditUser';
+import { AdminEditClinic } from './pages/admin/AdminEditClinic';
 
 function App() {
   const { isAuthenticated, user, roles } = useAuth();
@@ -97,9 +102,34 @@ function App() {
                 <AdminUsers />
               </ProtectedRoute>
             } />
+            <Route path="/admin/users/new" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminCreateUser />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/clinics" element={
               <ProtectedRoute requiredRole="WEBMASTER">
                 <AdminClinics />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clinics/new" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminCreateClinic />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clinics/:clinicId/roles" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminClinicRoles />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users/:userId/edit" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminEditUser />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clinics/:clinicId/edit" element={
+              <ProtectedRoute requiredRole="WEBMASTER">
+                <AdminEditClinic />
               </ProtectedRoute>
             } />
           </Routes>

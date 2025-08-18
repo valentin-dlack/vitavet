@@ -1,14 +1,72 @@
-import { Controller, Get, Query, Post, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Post,
+  Param,
+  UseGuards,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { ClinicsService } from './clinics.service';
 import { GetVetsDto } from './dto/get-vets.dto';
 import { Vet } from './clinics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CreateClinicDto } from './dto/create-clinic.dto';
+import { Clinic } from './entities/clinic.entity';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
 @Controller('clinics')
 export class ClinicsController {
   constructor(private readonly clinicsService: ClinicsService) {}
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER')
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() createClinicDto: CreateClinicDto): Promise<Clinic> {
+    return this.clinicsService.create(createClinicDto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER')
+  update(
+    @Param('id') id: string,
+    @Body() updateClinicDto: Partial<CreateClinicDto>,
+  ) {
+    return this.clinicsService.update(id, updateClinicDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string) {
+    return this.clinicsService.remove(id);
+  }
+
+  @Post(':id/roles')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER', 'ADMIN_CLINIC')
+  assignRole(
+    @Param('id') clinicId: string,
+    @Body() assignRoleDto: AssignRoleDto,
+  ) {
+    return this.clinicsService.assignRole(clinicId, assignRoleDto);
+  }
+
+  @Get(':id/roles')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WEBMASTER', 'ADMIN_CLINIC')
+  getClinicRoles(@Param('id') clinicId: string) {
+    return this.clinicsService.getClinicRoles(clinicId);
+  }
 
   @Get()
   async search(
