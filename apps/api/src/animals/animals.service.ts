@@ -24,12 +24,10 @@ export class AnimalsService {
     ownerId: string,
     clinicId?: string,
   ): Promise<Animal[]> {
-    if (clinicId) {
+    if (clinicId && clinicId.length > 0) {
       return this.animalRepository.find({ where: { ownerId, clinicId } });
     }
-    clinicId: string,
-  ): Promise<Animal[]> {
-    return this.animalRepository.find({ where: { ownerId, clinicId } });
+    return this.animalRepository.find({ where: { ownerId } });
   }
 
   async getAnimalHistory(
