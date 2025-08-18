@@ -62,17 +62,37 @@ const cards = [
 			<span className="text-3xl" aria-hidden>🐶</span>
 		),
 	},
+	{
+		key: 'ADMIN_USERS',
+		roles: ['WEBMASTER'],
+		to: '/admin/users',
+		title: 'Gestion utilisateurs',
+		desc: 'Voir et gérer les utilisateurs',
+		icon: (
+			<span className="text-3xl" aria-hidden>👥</span>
+		),
+	},
+	{
+		key: 'ADMIN_CLINICS',
+		roles: ['WEBMASTER'],
+		to: '/admin/clinics',
+		title: 'Gestion cliniques',
+		desc: 'Voir et gérer les cliniques',
+		icon: (
+			<span className="text-3xl" aria-hidden>🏥</span>
+		),
+	},
 ];
 
 export function RolePanel() {
-	const { user } = useAuth();
-	const role = user?.role || 'OWNER';
-	const visible = cards.filter((c) => c.roles.includes(role));
+	const { user, roles } = useAuth();
+	const userRoles = roles || [];
+	const visible = cards.filter((c) => c.roles.some(role => userRoles.includes(role)));
 
 	return (
 		<div className="min-h-screen bg-gray-50 py-12">
 			<div className="mx-auto max-w-5xl px-4">
-				<h1 className="text-2xl font-bold mb-6">Espace {role}</h1>
+				<h1 className="text-2xl font-bold mb-6">Espace {user?.role || 'Utilisateur'}</h1>
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{visible.map((c) => (
 						<Link key={c.key} to={c.to} className="group block rounded-lg border bg-white p-6 shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500">

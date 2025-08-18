@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { Document } from '../documents/entities/document.entity';
 
 describe('AppointmentsService', () => {
   let service: AppointmentsService;
@@ -47,6 +48,12 @@ describe('AppointmentsService', () => {
     findOne: jest.fn(),
   } as unknown as Repository<UserClinicRole>;
 
+  const documentRepoMock: Partial<Repository<Document>> = {
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  } as unknown as Repository<Document>;
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +67,7 @@ describe('AppointmentsService', () => {
         { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
         { provide: getRepositoryToken(TimeSlot), useValue: timeSlotRepoMock },
         { provide: getRepositoryToken(UserClinicRole), useValue: ucrRepoMock },
+        { provide: getRepositoryToken(Document), useValue: documentRepoMock },
         {
           provide: RemindersService,
           useValue: { planAppointmentReminders: jest.fn() },

@@ -93,8 +93,7 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  // For testing purposes
-  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+  async findAll(): Promise<Omit<User, 'password'>[]> {
     const users = await this.userRepository.find();
     return users.map((user) => ({
       id: user.id,

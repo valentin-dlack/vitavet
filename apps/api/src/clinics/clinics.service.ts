@@ -39,6 +39,7 @@ export class ClinicsService {
 
     // Base query
     let clinics = await this.clinicRepository.find({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       where: where as any,
       order: { city: 'ASC', name: 'ASC' },
       take: 50,
@@ -55,6 +56,7 @@ export class ClinicsService {
       // Load clinics with relations in batches (simple approach)
       const withRelations = await this.clinicRepository.find({
         relations: ['services'],
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         where: where as any,
       });
       for (const c of withRelations) {
@@ -66,6 +68,12 @@ export class ClinicsService {
     }
 
     return clinics;
+  }
+
+  async findAll(): Promise<Clinic[]> {
+    return this.clinicRepository.find({
+      order: { city: 'ASC', name: 'ASC' },
+    });
   }
 
   async getAllClinics(): Promise<Clinic[]> {

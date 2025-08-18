@@ -54,6 +54,12 @@ async function bootstrap() {
         async () => (await usersService.findByEmail('admin@example.com'))!,
       );
 
+    const webmaster = await usersService
+      .create('webmaster@example.com', 'password123', 'Webmaster', 'Webmaster')
+      .catch(
+        async () => (await usersService.findByEmail('webmaster@example.com'))!,
+      );
+
     // Create clinic
     let clinic = await clinicRepo.findOne({
       where: { name: 'Clinique VitaVet' },
@@ -78,6 +84,11 @@ async function bootstrap() {
         userId: adminClinic.id,
         clinicId: clinic.id,
         role: 'ADMIN_CLINIC' as const,
+      },
+      {
+        userId: webmaster.id,
+        clinicId: clinic.id,
+        role: 'WEBMASTER' as const,
       },
     ];
 
@@ -285,6 +296,7 @@ async function bootstrap() {
     console.log('VET #2 : vet2@example.com  / password123');
     console.log('ASV    : asv@example.com   / password123');
     console.log('ADMIN  : admin@example.com / password123\n');
+    console.log('WEBMASTER: webmaster@example.com / password123');
   } finally {
     await app.close();
   }

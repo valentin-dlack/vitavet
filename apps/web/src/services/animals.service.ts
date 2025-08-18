@@ -22,6 +22,8 @@ export interface AnimalHistoryItemDto {
   startsAt: string;
   endsAt: string;
   status: string;
+  notes?: string | null;
+  report?: string | null;
   vet?: AnimalHistoryItemVetDto | null;
   type?: AnimalHistoryItemTypeDto | null;
 }

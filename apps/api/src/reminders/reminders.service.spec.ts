@@ -20,6 +20,7 @@ describe('RemindersService', () => {
   } as unknown as Repository<ReminderInstance>;
   const logRepoMock = {
     save: jest.fn(),
+    create: jest.fn(),
   } as unknown as Repository<NotificationLog>;
   const aptRepoMock = {
     findOne: jest.fn(),

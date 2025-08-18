@@ -15,6 +15,7 @@ import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { RemindersService } from '../reminders/reminders.service';
 import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
+import { Document } from '../documents/entities/document.entity';
 
 export interface AppointmentResponse {
   id: string;
@@ -52,6 +53,8 @@ export class AppointmentsService {
     @InjectRepository(UserClinicRole)
     private readonly ucrRepository: Repository<UserClinicRole>,
     private readonly remindersService: RemindersService,
+    @InjectRepository(Document)
+    private readonly documentRepo: Repository<Document>,
   ) {}
 
   async createAppointment(
@@ -386,6 +389,15 @@ export class AppointmentsService {
             }
           : undefined,
       };
+    });
+  }
+
+  async findDocumentsByAppointmentId(
+    appointmentId: string,
+  ): Promise<Document[]> {
+    return this.documentRepo.find({
+      where: { appointmentId },
+      order: { createdAt: 'DESC' },
     });
   }
 }

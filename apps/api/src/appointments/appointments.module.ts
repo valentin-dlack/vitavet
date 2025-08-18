@@ -9,6 +9,7 @@ import { Animal } from '../animals/entities/animal.entity';
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { RemindersModule } from '../reminders/reminders.module';
+import { Document } from '../documents/entities/document.entity';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RemindersModule } from '../reminders/reminders.module';
       Animal,
       TimeSlot,
       UserClinicRole,
+      Document,
     ]),
     RemindersModule,
   ],

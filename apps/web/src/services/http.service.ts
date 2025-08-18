@@ -11,9 +11,13 @@ class HttpService {
     const token = authService.getToken();
 
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type for JSON requests, let browser handle it for FormData
+    if (!(options.body instanceof FormData)) {
+      (headers as Record<string, string>)['Content-Type'] = 'application/json';
+    }
 
     if (token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
@@ -46,8 +50,30 @@ class HttpService {
   async post<T, D = unknown>(endpoint: string, data?: D): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined), // Handle FormData
     });
+  }
+
+  async download(endpoint: string): Promise<Blob> {
+    const token = authService.getToken();
+    const url = `${this.baseUrl}${endpoint}`;
+
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    return response.blob();
   }
 
   async patch<T, D = unknown>(endpoint: string, data?: D): Promise<T> {
