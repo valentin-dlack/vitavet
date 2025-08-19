@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { User } from 'src/users/entities/user.entity';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -155,7 +156,7 @@ describe('AuthController', () => {
 
       mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
 
-      const result = await controller.getCurrentUser(mockRequest);
+      const result = await controller.getCurrentUser(mockRequest.user as User);
 
       expect(authService.getCurrentUser).toHaveBeenCalledWith('user-123');
       expect(result).toEqual(mockUser);
