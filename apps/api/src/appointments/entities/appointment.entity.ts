@@ -81,4 +81,7 @@ export class Appointment {
 
   @Column('text', { nullable: true })
   report?: string | null;
+
+  @Column('text', { nullable: true })
+  rejectionReason?: string | null;
 }

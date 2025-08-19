@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Query,
-  UseGuards,
-  Body,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AnimalsService } from './animals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,21 +6,11 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { User } from '../users/entities/user.entity';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { CreateAnimalDto } from './dto/create-animal.dto';
 
 @Controller('animals')
 @UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
 export class AnimalsController {
   constructor(private readonly animalsService: AnimalsService) {}
-
-  @Post()
-  @Roles('OWNER')
-  async createAnimal(
-    @CurrentUser() user: User,
-    @Body() createDto: CreateAnimalDto,
-  ) {
-    return this.animalsService.createAnimal(createDto, user.id);
-  }
 
   @Get('me')
   @Roles('OWNER')

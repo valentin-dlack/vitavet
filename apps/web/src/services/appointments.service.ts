@@ -47,6 +47,10 @@ export interface CompleteAppointmentData {
   report?: string;
 }
 
+export interface RejectAppointmentData {
+  rejectionReason: string;
+}
+
 import { httpService } from './http.service';
 
 class AppointmentsService {
@@ -82,6 +86,10 @@ class AppointmentsService {
 
   async completeAppointment(id: string, data: CompleteAppointmentData): Promise<AppointmentResponse> {
     return httpService.patch<AppointmentResponse>(`/appointments/${id}/complete`, data);
+  }
+
+  async rejectAppointment(id: string, data: RejectAppointmentData): Promise<AppointmentResponse> {
+    return httpService.patch<AppointmentResponse>(`/appointments/${id}/reject`, data);
   }
 }
 

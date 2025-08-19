@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppointmentsController } from './appointments.controller';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { RejectAppointmentDto } from './dto/reject-appointment.dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -14,6 +15,7 @@ describe('AppointmentsController', () => {
     createAppointment: jest.fn(),
     getPendingAppointments: jest.fn(),
     confirmAppointment: jest.fn(),
+    rejectAppointment: jest.fn(),
   } as unknown as AppointmentsService;
 
   beforeEach(async () => {
@@ -85,6 +87,23 @@ describe('AppointmentsController', () => {
     expect(res).toMatchObject({
       id: 'apt',
       message: 'Appointment confirmed successfully.',
+    });
+  });
+
+  it('should reject appointment and return message', async () => {
+    const rejectDto: RejectAppointmentDto = {
+      rejectionReason: 'Vétérinaire indisponible à cette date',
+    };
+
+    (service.rejectAppointment as any) = jest
+      .fn()
+      .mockResolvedValue({ id: 'apt', status: 'REJECTED' });
+
+    const res = await controller.rejectAppointment('apt', rejectDto);
+    expect(service.rejectAppointment).toHaveBeenCalledWith('apt', rejectDto);
+    expect(res).toMatchObject({
+      id: 'apt',
+      message: 'Appointment rejected successfully.',
     });
   });
 });

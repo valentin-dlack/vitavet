@@ -14,6 +14,7 @@ import {
 import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { Document } from '../documents/entities/document.entity';
+import { RejectAppointmentDto } from './dto/reject-appointment.dto';
 
 describe('AppointmentsService', () => {
   let service: AppointmentsService;
@@ -27,7 +28,8 @@ describe('AppointmentsService', () => {
     find: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
-  } as unknown as Repository<Appointment>;
+    count: jest.fn(),
+  };
 
   const userRepoMock = {
     find: jest.fn(),
@@ -61,7 +63,7 @@ describe('AppointmentsService', () => {
         AppointmentsService,
         {
           provide: getRepositoryToken(Appointment),
-          useValue: appointmentRepoMock,
+          useValue: appointmentRepoMock as unknown as Repository<Appointment>,
         },
         { provide: getRepositoryToken(User), useValue: userRepoMock },
         { provide: getRepositoryToken(Animal), useValue: animalRepoMock },
@@ -451,6 +453,77 @@ describe('AppointmentsService', () => {
       await expect(
         service.completeAppointment('apt-1', 'vet-1', {}),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('rejectAppointment', () => {
+    const mockAppointment = {
+      id: 'apt-1',
+      clinicId: 'clinic-1',
+      animalId: 'animal-1',
+      vetUserId: 'vet-1',
+      status: 'PENDING',
+      startsAt: new Date('2024-01-10T10:00:00Z'),
+      endsAt: new Date('2024-01-10T10:30:00Z'),
+      createdAt: new Date('2024-01-01T00:00:00Z'),
+      animal: { id: 'animal-1', name: 'Milo' },
+      vet: { id: 'vet-1', firstName: 'Dr', lastName: 'Smith' },
+    };
+
+    const rejectDto: RejectAppointmentDto = {
+      rejectionReason: 'Vétérinaire indisponible à cette date',
+    };
+
+    it('should reject a pending appointment', async () => {
+      appointmentRepoMock.findOne.mockResolvedValue(mockAppointment);
+      appointmentRepoMock.save.mockResolvedValue({
+        ...mockAppointment,
+        status: 'REJECTED',
+        rejectionReason: rejectDto.rejectionReason,
+      });
+
+      const result = await service.rejectAppointment('apt-1', rejectDto);
+
+      expect(appointmentRepoMock.findOne).toHaveBeenCalledWith({
+        where: { id: 'apt-1' },
+        relations: { animal: true, vet: true },
+      });
+      expect(appointmentRepoMock.save).toHaveBeenCalledWith({
+        ...mockAppointment,
+        status: 'REJECTED',
+        rejectionReason: rejectDto.rejectionReason,
+      });
+      expect(result.status).toBe('REJECTED');
+    });
+
+    it('should throw NotFoundException when appointment not found', async () => {
+      appointmentRepoMock.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.rejectAppointment('apt-1', rejectDto),
+      ).rejects.toThrow('Appointment not found');
+    });
+
+    it('should throw ConflictException when appointment is already rejected', async () => {
+      appointmentRepoMock.findOne.mockResolvedValue({
+        ...mockAppointment,
+        status: 'REJECTED',
+      });
+
+      await expect(
+        service.rejectAppointment('apt-1', rejectDto),
+      ).rejects.toThrow('Appointment is already rejected');
+    });
+
+    it('should throw ConflictException when appointment is completed', async () => {
+      appointmentRepoMock.findOne.mockResolvedValue({
+        ...mockAppointment,
+        status: 'COMPLETED',
+      });
+
+      await expect(
+        service.rejectAppointment('apt-1', rejectDto),
+      ).rejects.toThrow('Cannot reject a completed appointment');
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -16,8 +17,6 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser } from './decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
 
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
@@ -37,40 +36,43 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getCurrentUser(@CurrentUser() user: User) {
-    return this.authService.getCurrentUser(user.id);
+  async getCurrentUser(@Request() req) {
+    return this.authService.getCurrentUser(req.user.id);
   }
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   async updateProfile(
-    @CurrentUser() user: User,
+    @Request() req,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    return this.authService.updateProfile(user.id, updateProfileDto);
+    return this.authService.updateProfile(req.user.id, updateProfileDto);
   }
 
   @Patch('password')
   @UseGuards(JwtAuthGuard)
   async changePassword(
-    @CurrentUser() user: User,
+    @Request() req,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return this.authService.changePassword(user.id, changePasswordDto);
+    return this.authService.changePassword(req.user.id, changePasswordDto);
   }
 
   @Post('delete-account')
   @UseGuards(JwtAuthGuard)
   async requestAccountDeletion(
-    @CurrentUser() user: User,
+    @Request() req,
     @Body() deleteAccountDto: DeleteAccountDto,
   ) {
-    return this.authService.requestAccountDeletion(user.id, deleteAccountDto);
+    return this.authService.requestAccountDeletion(
+      req.user.id,
+      deleteAccountDto,
+    );
   }
 
   @Get('delete-account/status')
   @UseGuards(JwtAuthGuard)
-  async getDeletionRequestStatus(@CurrentUser() user: User) {
-    return this.authService.getDeletionRequestStatus(user.id);
+  async getDeletionRequestStatus(@Request() req) {
+    return this.authService.getDeletionRequestStatus(req.user.id);
   }
 }

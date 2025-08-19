@@ -15,6 +15,7 @@ import { TimeSlot } from '../slots/entities/time-slot.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { RemindersService } from '../reminders/reminders.service';
 import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
+import { RejectAppointmentDto } from './dto/reject-appointment.dto';
 import { Document } from '../documents/entities/document.entity';
 
 export interface AppointmentResponse {
@@ -278,6 +279,50 @@ export class AppointmentsService {
     appointment.status = 'COMPLETED';
 
     const saved = await this.appointmentRepository.save(appointment);
+
+    return {
+      id: saved.id,
+      clinicId: saved.clinicId,
+      animalId: saved.animalId,
+      vetUserId: saved.vetUserId,
+      typeId: saved.typeId ?? undefined,
+      status: saved.status,
+      startsAt: saved.startsAt.toISOString(),
+      endsAt: saved.endsAt.toISOString(),
+      createdAt: saved.createdAt.toISOString(),
+    };
+  }
+
+  async rejectAppointment(
+    id: string,
+    rejectDto: RejectAppointmentDto,
+  ): Promise<AppointmentResponse> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+      relations: { animal: true, vet: true },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status === 'REJECTED') {
+      throw new ConflictException('Appointment is already rejected');
+    }
+
+    if (appointment.status === 'COMPLETED') {
+      throw new ConflictException('Cannot reject a completed appointment');
+    }
+
+    appointment.status = 'REJECTED';
+    appointment.rejectionReason = rejectDto.rejectionReason;
+
+    const saved = await this.appointmentRepository.save(appointment);
+
+    // Log the rejection for audit purposes
+    console.log(
+      `Appointment ${id} rejected by vet ${appointment.vetUserId} with reason: ${rejectDto.rejectionReason}`,
+    );
 
     return {
       id: saved.id,

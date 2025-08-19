@@ -4,30 +4,6 @@ export interface AnimalDto {
   ownerId: string;
   name: string;
   birthdate?: string | null;
-  species?: string | null;
-  breed?: string | null;
-  sex?: 'MALE' | 'FEMALE' | 'UNKNOWN' | null;
-  isSterilized?: boolean | null;
-  color?: string | null;
-  chipId?: string | null;
-  weightKg?: number | null;
-  heightCm?: number | null;
-  isNac?: boolean | null;
-}
-
-export interface CreateAnimalDto {
-  name: string;
-  clinicId: string;
-  birthdate?: string;
-  species?: string;
-  breed?: string;
-  sex?: 'MALE' | 'FEMALE' | 'UNKNOWN';
-  isSterilized?: boolean;
-  color?: string;
-  chipId?: string;
-  weightKg?: number;
-  heightCm?: number;
-  isNac?: boolean;
 }
 
 import { httpService } from './http.service';
@@ -60,10 +36,6 @@ export interface AnimalHistoryDto {
 class AnimalsService {
   async getMyAnimals(clinicId: string): Promise<AnimalDto[]> {
     return httpService.get<AnimalDto[]>(`/animals/me?clinicId=${encodeURIComponent(clinicId)}`);
-  }
-
-  async createAnimal(animalData: CreateAnimalDto): Promise<AnimalDto> {
-    return httpService.post<AnimalDto>('/animals', animalData);
   }
 
   async getHistory(animalId: string): Promise<AnimalHistoryDto> {

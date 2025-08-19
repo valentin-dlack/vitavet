@@ -18,6 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { CompleteAppointmentDto } from './dto/complete-appointment.dto';
+import { RejectAppointmentDto } from './dto/reject-appointment.dto';
 import { Document } from '../documents/entities/document.entity';
 
 @Controller('appointments')
@@ -36,7 +37,6 @@ export class AppointmentsController {
       user.id,
     );
 
-    // TODO: Send confirmation email
     console.log(
       `Appointment created: ${appointment.id} for ${appointment.startsAt}`,
     );
@@ -110,6 +110,25 @@ export class AppointmentsController {
     return {
       ...appointment,
       message: 'Appointment completed and report saved.',
+    };
+  }
+
+  @Patch(':id/reject')
+  @Roles('ASV', 'VET')
+  async rejectAppointment(
+    @Param('id') id: string,
+    @Body() rejectDto: RejectAppointmentDto,
+  ) {
+    const appointment = await this.appointmentsService.rejectAppointment(
+      id,
+      rejectDto,
+    );
+
+    // TODO: Send rejection email to owner
+
+    return {
+      ...appointment,
+      message: 'Appointment rejected successfully.',
     };
   }
 

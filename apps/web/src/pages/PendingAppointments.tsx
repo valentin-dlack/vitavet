@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { appointmentsService, type PendingAppointmentsResponse } from '../services/appointments.service';
 import { Pagination } from '../components/Pagination';
+import { RejectAppointmentModal } from '../components/RejectAppointmentModal';
 
 export function PendingAppointments() {
 	const [data, setData] = useState<PendingAppointmentsResponse | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [confirmingId, setConfirmingId] = useState<string | null>(null);
+	const [rejectingId, setRejectingId] = useState<string | null>(null);
+	const [showRejectModal, setShowRejectModal] = useState(false);
+	const [selectedAppointment, setSelectedAppointment] = useState<PendingAppointmentsResponse['appointments'][number] | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(3); 
 
@@ -43,6 +47,30 @@ export function PendingAppointments() {
 		} finally {
 			setConfirmingId(null);
 		}
+	};
+
+	const handleRejectClick = (appointment: PendingAppointmentsResponse['appointments'][number]) => {
+		setSelectedAppointment(appointment);
+		setShowRejectModal(true);
+	};
+
+	const handleReject = async (rejectionReason: string) => {
+		if (!selectedAppointment) return;
+		
+		try {
+			setRejectingId(selectedAppointment.id);
+			await appointmentsService.rejectAppointment(selectedAppointment.id, { rejectionReason });
+			await loadAppointments(currentPage);
+		} catch (e) {
+			setError(e instanceof Error ? e.message : 'Failed to reject');
+		} finally {
+			setRejectingId(null);
+		}
+	};
+
+	const handleCloseRejectModal = () => {
+		setShowRejectModal(false);
+		setSelectedAppointment(null);
 	};
 
 	const items = data?.appointments || [];
@@ -94,13 +122,22 @@ export function PendingAppointments() {
 												{end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 											</div>
 										</div>
-										<button
-											className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
-											disabled={confirmingId === a.id}
-											onClick={() => confirm(a.id)}
-										>
-											{confirmingId === a.id ? 'Validation…' : 'Confirmer'}
-										</button>
+										<div className="flex space-x-2">
+											<button
+												className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+												disabled={rejectingId === a.id || confirmingId === a.id}
+												onClick={() => handleRejectClick(a)}
+											>
+												{rejectingId === a.id ? 'Rejet…' : 'Rejeter'}
+											</button>
+											<button
+												className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+												disabled={confirmingId === a.id || rejectingId === a.id}
+												onClick={() => confirm(a.id)}
+											>
+												{confirmingId === a.id ? 'Validation…' : 'Confirmer'}
+											</button>
+										</div>
 									</div>
 
 									<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -150,8 +187,30 @@ export function PendingAppointments() {
 					)}
 				</div>
 			</div>
+
+			{/* Modal de rejet */}
+			{showRejectModal && selectedAppointment && (
+				<RejectAppointmentModal
+					isOpen={showRejectModal}
+					onClose={handleCloseRejectModal}
+					onReject={async (rejectionReason: string) => {
+						await handleReject(rejectionReason);
+					}}
+					appointmentId={selectedAppointment.id}
+					appointmentDetails={{
+						animalName: selectedAppointment.animal?.name,
+						ownerName: selectedAppointment.owner ? `${selectedAppointment.owner.firstName} ${selectedAppointment.owner.lastName}` : undefined,
+						date: new Date(selectedAppointment.startsAt).toLocaleDateString('fr-FR', { 
+							weekday: 'long', 
+							day: '2-digit', 
+							month: '2-digit', 
+							year: 'numeric',
+							hour: '2-digit',
+							minute: '2-digit'
+						}),
+					}}
+				/>
+			)}
 		</div>
 	);
 }
-
-
