@@ -1,18 +1,14 @@
-import { useEffect, useState } from 'react';
-import { animalsService, type AnimalDto, type AnimalHistoryDto } from '../../services/animals.service';
-import { documentsService } from '../../services/documents.service';
-import { httpService } from '../../services/http.service';
-import type { Document } from '../../entities/document.entity';
+import { useEffect, useMemo, useState } from 'react';
+import { animalsService, type AnimalDto } from '../../services/animals.service';
 import { AddAnimalModal } from '../../components/AddAnimalModal';
+import { AnimalDetailsModal } from '../../components/AnimalDetailsModal';
 import { authService } from '../../services/auth.service';
 
 export function OwnerAnimals() {
   const [animals, setAnimals] = useState<AnimalDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [history, setHistory] = useState<Record<string, AnimalHistoryDto | undefined>>({});
-  const [documents, setDocuments] = useState<Record<string, Document[]>>({});
+  const [selectedAnimal, setSelectedAnimal] = useState<AnimalDto | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [userClinicId, setUserClinicId] = useState<string>('');
 
@@ -40,152 +36,79 @@ export function OwnerAnimals() {
   }, [userClinicId]);
 
   const handleAddSuccess = () => {
-    loadAnimals(); // Reload the list after adding
+    loadAnimals();
   };
 
-  async function toggleHistory(id: string) {
-    if (openId === id) {
-      setOpenId(null);
-      return;
-    }
-    setOpenId(id);
-    if (!history[id]) {
-      try {
-        const h = await animalsService.getHistory(id);
-        setHistory((prev) => ({ ...prev, [id]: h }));
-        
-        // Load documents for completed appointments
-        const completedAppointments = h.appointments.filter(apt => apt.status === 'COMPLETED');
-        for (const apt of completedAppointments) {
-          try {
-            const docs = await documentsService.getDocumentsForAppointment(apt.id);
-            setDocuments(prev => ({
-              ...prev,
-              [apt.id]: Array.isArray(docs) ? docs : []
-            }));
-          } catch (e) {
-            console.error('Error loading documents for appointment:', apt.id, e);
-            setDocuments(prev => ({
-              ...prev,
-              [apt.id]: []
-            }));
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }
+  const emojiForSpecies = useMemo(() => {
+    return (species?: string | null): string => {
+      if (!species) return '🐾';
+      const s = species.toLowerCase();
+      if (s.includes('chien') || s.includes('dog')) return '🐶';
+      if (s.includes('chat') || s.includes('cat')) return '🐱';
+      if (s.includes('lapin') || s.includes('rabbit')) return '🐰';
+      if (s.includes('hamster')) return '🐹';
+      if (s.includes('oiseau') || s.includes('bird') || s.includes('perruche')) return '🐦';
+      if (s.includes('poisson') || s.includes('fish')) return '🐟';
+      if (s.includes('cheval') || s.includes('horse')) return '🐴';
+      if (s.includes('tortue') || s.includes('turtle')) return '🐢';
+      if (s.includes('serpent') || s.includes('snake')) return '🐍';
+      if (s.includes('furet')) return '🦦';
+      if (s.includes('cochon d') || s.includes('guinea')) return '🐹';
+      return '🐾';
+    };
+  }, []);
 
-  const handleDownloadDocument = async (documentId: string, filename: string) => {
-    try {
-      const response = await httpService.download(`/documents/download/${documentId}`);
-      
-      // Create a blob from the response
-      const blob = new Blob([response]);
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading document:', error);
-      alert('Erreur lors du téléchargement du document');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto max-w-3xl px-4">
-        <div className="flex justify-between items-center mb-4">
+      <div className="mx-auto max-w-5xl px-4">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold">Mes animaux</h1>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            + Ajouter un animal
-          </button>
         </div>
         {loading ? <div>Chargement…</div> : null}
         {error ? <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
-        <div className="space-y-3">
-          {animals.map((an) => {
-            const h = history[an.id];
-            return (
-              <div key={an.id} className="border rounded bg-white">
-                <button className="w-full text-left p-3 flex items-center justify-between" onClick={() => toggleHistory(an.id)}>
-                  <div>
-                    <div className="font-medium">{an.name}</div>
-                    <div className="text-sm text-gray-600">
-                      {an.species && an.breed ? `${an.species} - ${an.breed}` : an.species || an.breed || '—'}
-                    </div>
-                    <div className="text-sm text-gray-600">{an.birthdate ? new Date(an.birthdate).toLocaleDateString() : '—'}</div>
-                  </div>
-                  <span aria-hidden>{openId === an.id ? '▲' : '▼'}</span>
-                </button>
-                {openId === an.id && (
-                  <div className="p-3 border-t">
-                    <div className="font-medium mb-2">Historique</div>
-                    {h ? (
-                      h.appointments.length ? (
-                        <ul className="space-y-1 text-sm">
-                          {h.appointments.slice(0, 10).map((apt) => (
-                            <li key={apt.id} className="p-2 border-b">
-                              <div className="flex items-center justify-between">
-                                <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
-                              </div>
-                              {apt.report ? <p className="text-xs text-gray-700">Rapport: {apt.report}</p> : null}
-                              {apt.status === 'COMPLETED' && documents[apt.id] && documents[apt.id].length > 0 && (
-                                <div className="mt-2">
-                                  <p className="text-xs text-gray-600 mb-1">Documents :</p>
-                                  <div className="space-y-1">
-                                    {documents[apt.id].map(doc => (
-                                      <div key={doc.id} className="text-xs">
-                                        <button
-                                          onClick={() => handleDownloadDocument(doc.id, doc.filename)}
-                                          className="text-blue-600 hover:underline bg-transparent border-none p-0 cursor-pointer"
-                                        >
-                                          📄 {doc.filename}
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-gray-600 text-sm">Aucun historique</div>
-                      )
-                    ) : (
-                      <div className="text-gray-500 text-sm">Chargement…</div>
-                    )}
-                  </div>
-                )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="border-2 border-dashed rounded-lg p-6 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left flex items-center justify-center h-full min-h-[120px]"
+            aria-label="Ajouter un animal"
+          >
+            <div className="text-center">
+              <div className="text-3xl">➕</div>
+              <div className="mt-2 font-medium">Ajouter un animal</div>
+            </div>
+          </button>
+
+          {animals.map((an) => (
+            <button
+              key={an.id}
+              className="border rounded-lg p-4 bg-white hover:bg-gray-50 text-left flex items-center gap-4"
+              onClick={() => setSelectedAnimal(an)}
+            >
+              <div className="text-3xl" aria-hidden>{emojiForSpecies(an.species)}</div>
+              <div>
+                <div className="font-medium text-lg">{an.name}</div>
+                <div className="text-sm text-gray-600">
+                  {an.species && an.breed ? `${an.species} • ${an.breed}` : an.species || an.breed || '—'}
+                </div>
               </div>
-            );
-          })}
-          {!loading && !error && animals.length === 0 ? (
-            <div className="text-gray-600">Aucun animal.</div>
-          ) : null}
+            </button>
+          ))}
         </div>
+        {!loading && !error && animals.length === 0 ? (
+          <div className="text-gray-600 mt-3">Aucun animal.</div>
+        ) : null}
 
         <AddAnimalModal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSuccess={handleAddSuccess}
           clinicId={userClinicId}
+        />
+        <AnimalDetailsModal
+          isOpen={selectedAnimal != null}
+          onClose={() => setSelectedAnimal(null)}
+          animal={selectedAnimal}
         />
       </div>
     </div>
