@@ -62,6 +62,7 @@ interface DecodedToken {
   sub: string;
   email: string;
   roles: string[];
+  clinicIds: string[];
   iat: number;
   exp: number;
 }
@@ -144,6 +145,18 @@ class AuthService {
     try {
       const decoded = jwtDecode<DecodedToken>(token);
       return decoded.roles || [];
+    } catch (e) {
+      console.error('Failed to decode token', e);
+      return [];
+    }
+  }
+
+  getUserClinics(): string[] {
+    const token = this.getToken();
+    if (!token) return [];
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      return decoded.clinicIds || [];
     } catch (e) {
       console.error('Failed to decode token', e);
       return [];

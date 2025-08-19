@@ -5,6 +5,7 @@ import { AnimalsService } from './animals.service';
 import { Animal } from './entities/animal.entity';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
+import { Clinic } from '../clinics/entities/clinic.entity';
 
 describe('AnimalsService', () => {
   let service: AnimalsService;
@@ -21,6 +22,7 @@ describe('AnimalsService', () => {
         { provide: getRepositoryToken(Animal), useValue: repoMock },
         { provide: getRepositoryToken(Appointment), useValue: {} },
         { provide: getRepositoryToken(UserClinicRole), useValue: {} },
+        { provide: getRepositoryToken(Clinic), useValue: {} },
       ],
     }).compile();
 

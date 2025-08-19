@@ -3,6 +3,8 @@ import { animalsService, type AnimalDto, type AnimalHistoryDto } from '../../ser
 import { documentsService } from '../../services/documents.service';
 import { httpService } from '../../services/http.service';
 import type { Document } from '../../entities/document.entity';
+import { AddAnimalModal } from '../../components/AddAnimalModal';
+import { authService } from '../../services/auth.service';
 
 export function OwnerAnimals() {
   const [animals, setAnimals] = useState<AnimalDto[]>([]);
@@ -11,16 +13,35 @@ export function OwnerAnimals() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [history, setHistory] = useState<Record<string, AnimalHistoryDto | undefined>>({});
   const [documents, setDocuments] = useState<Record<string, Document[]>>({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [userClinicId, setUserClinicId] = useState<string>('');
 
-  useEffect(() => {
+  const loadAnimals = () => {
     setLoading(true);
     setError(null);
     animalsService
-      .getMyAnimals('')
+      .getMyAnimals(userClinicId)
       .then(setAnimals)
       .catch((e) => setError(e instanceof Error ? e.message : 'Erreur'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    // Get user's clinic ID
+    const clinics = authService.getUserClinics();
+    const clinicId = clinics.length > 0 ? clinics[0] : '';
+    setUserClinicId(clinicId);
   }, []);
+
+  useEffect(() => {
+    if (userClinicId !== '') {
+      loadAnimals();
+    }
+  }, [userClinicId]);
+
+  const handleAddSuccess = () => {
+    loadAnimals(); // Reload the list after adding
+  };
 
   async function toggleHistory(id: string) {
     if (openId === id) {
@@ -85,7 +106,15 @@ export function OwnerAnimals() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-3xl px-4">
-        <h1 className="text-2xl font-semibold mb-4">Mes animaux</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold">Mes animaux</h1>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            + Ajouter un animal
+          </button>
+        </div>
         {loading ? <div>Chargement…</div> : null}
         {error ? <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
         <div className="space-y-3">
@@ -96,6 +125,9 @@ export function OwnerAnimals() {
                 <button className="w-full text-left p-3 flex items-center justify-between" onClick={() => toggleHistory(an.id)}>
                   <div>
                     <div className="font-medium">{an.name}</div>
+                    <div className="text-sm text-gray-600">
+                      {an.species && an.breed ? `${an.species} - ${an.breed}` : an.species || an.breed || '—'}
+                    </div>
                     <div className="text-sm text-gray-600">{an.birthdate ? new Date(an.birthdate).toLocaleDateString() : '—'}</div>
                   </div>
                   <span aria-hidden>{openId === an.id ? '▲' : '▼'}</span>
@@ -148,6 +180,13 @@ export function OwnerAnimals() {
             <div className="text-gray-600">Aucun animal.</div>
           ) : null}
         </div>
+
+        <AddAnimalModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={handleAddSuccess}
+          clinicId={userClinicId}
+        />
       </div>
     </div>
   );
