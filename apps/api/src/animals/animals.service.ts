@@ -74,8 +74,10 @@ export class AnimalsService {
     });
     if (!animal) throw new NotFoundException('Animal not found');
 
-    // Authorization: owner of animal OR clinic staff (VET/ASV/ADMIN_CLINIC) of same clinic
-    if (animal.ownerId !== requesterId) {
+    // Check if requester is owner or staff
+    const isOwner = animal.ownerId === requesterId;
+
+    if (!isOwner) {
       const staffLink = await this.userClinicRoleRepository.findOne({
         where: { userId: requesterId, clinicId: animal.clinicId },
       });
@@ -93,6 +95,18 @@ export class AnimalsService {
       relations: { vet: true, type: true, clinic: true },
     });
 
-    return { animal, appointments };
+    // Filter out internal notes for owners
+    const filteredAppointments = appointments.map((appointment) => {
+      if (isOwner) {
+        // For owners, remove internal notes but keep reports
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { notes, ...appointmentWithoutNotes } = appointment;
+        return appointmentWithoutNotes;
+      }
+      // For staff, return full appointment data
+      return appointment;
+    });
+
+    return { animal, appointments: filteredAppointments };
   }
 }

@@ -83,10 +83,10 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 			.slice(0, 3);
 	}, [history]);
 
-	const recentNotes = useMemo(() => {
+	const recentReports = useMemo(() => {
 		if (!history) return [] as NonNullable<AnimalHistoryDto>['appointments'];
 		return history.appointments
-			.filter((a) => (a.report && a.report.length > 0) || (a.notes && a.notes.length > 0))
+			.filter((a) => a.report && a.report.length > 0)
 			.sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
 			.slice(0, 5);
 	}, [history]);
@@ -160,12 +160,12 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 					</div>
 
 					<div className="border rounded p-4 md:col-span-2">
-						<div className="font-medium mb-2">Notes et rapports récents</div>
-						{recentNotes.length === 0 ? (
-							<div className="text-sm text-gray-600">Aucune note ou rapport</div>
+						<div className="font-medium mb-2">Rapports récents</div>
+						{recentReports.length === 0 ? (
+							<div className="text-sm text-gray-600">Aucun rapport</div>
 						) : (
 							<ul className="text-sm space-y-3">
-								{recentNotes.map((a) => (
+								{recentReports.map((a) => (
 									<li key={a.id} className="border-b pb-2 last:border-b-0">
 										<div className="flex items-center justify-between">
 											<span className="text-gray-500">{formatDate(a.startsAt)}</span>

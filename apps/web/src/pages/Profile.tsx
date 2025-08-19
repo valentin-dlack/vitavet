@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
   }
 
   if (!user) {
-    return (
+		return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil non trouvé</h2>
@@ -108,11 +108,11 @@ const Profile: React.FC = () => {
             Retour à l'accueil
           </button>
         </div>
-      </div>
-    );
-  }
+			</div>
+		);
+	}
 
-  return (
+	return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Success/Error Messages */}
@@ -270,14 +270,14 @@ const Profile: React.FC = () => {
                         <div>
                           <p className="font-medium text-gray-900">Supprimer le compte</p>
                           <p className="text-sm text-gray-500">Demander la suppression de votre compte</p>
-                        </div>
-                      </div>
+			</div>
+					</div>
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
-                  </div>
-                </div>
+					</button>
+				</div>
+			</div>
               </div>
 
               {/* Roles and Permissions */}
@@ -425,8 +425,8 @@ const Profile: React.FC = () => {
           onError={handleError}
         />
       )}
-    </div>
-  );
+		</div>
+	);
 };
 
 export default Profile;

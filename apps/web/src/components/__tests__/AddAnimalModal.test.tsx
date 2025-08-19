@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
-import { AddAnimalModal } from '../AddAnimalModal';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { animalsService } from '../../services/animals.service';
+import { AddAnimalModal } from '../AddAnimalModal';
 
 // Mock the animals service
 vi.mock('../../services/animals.service', () => ({
@@ -54,6 +54,12 @@ describe('AddAnimalModal', () => {
       clinicId: 'clinic-123',
       species: 'chien',
       breed: 'Labrador',
+      ownerId: 'owner-123',
+      birthdate: '',
+      color: '',
+      chipId: '',
+      weightKg: undefined,
+      heightCm: undefined,
     };
     
     mockAnimalsService.createAnimal.mockResolvedValue(mockAnimal);
@@ -161,7 +167,7 @@ describe('AddAnimalModal', () => {
   });
 
   it('handles numeric inputs correctly', async () => {
-    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo' });
+    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo', clinicId: 'clinic-123', ownerId: 'owner-123' });
 
     render(<AddAnimalModal {...defaultProps} />);
 
@@ -192,7 +198,7 @@ describe('AddAnimalModal', () => {
   });
 
   it('handles checkbox inputs correctly', async () => {
-    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo' });
+    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo', clinicId: 'clinic-123', ownerId: 'owner-123' });
 
     render(<AddAnimalModal {...defaultProps} />);
 
@@ -219,7 +225,7 @@ describe('AddAnimalModal', () => {
   });
 
   it('handles select input correctly', async () => {
-    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo' });
+    mockAnimalsService.createAnimal.mockResolvedValue({ id: 'animal-123', name: 'Milo', clinicId: 'clinic-123', ownerId: 'owner-123' });
 
     render(<AddAnimalModal {...defaultProps} />);
 
