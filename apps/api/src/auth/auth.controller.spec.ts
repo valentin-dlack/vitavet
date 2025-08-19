@@ -13,6 +13,7 @@ describe('AuthController', () => {
   const mockAuthService = {
     register: jest.fn(),
     login: jest.fn(),
+    getCurrentUser: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -134,6 +135,30 @@ describe('AuthController', () => {
       await expect(controller.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('getCurrentUser', () => {
+    it('should return current user data', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        roles: ['OWNER'],
+        clinics: ['clinic-1'],
+      };
+
+      const mockRequest = {
+        user: { id: 'user-123' },
+      };
+
+      mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
+
+      const result = await controller.getCurrentUser(mockRequest);
+
+      expect(authService.getCurrentUser).toHaveBeenCalledWith('user-123');
+      expect(result).toEqual(mockUser);
     });
   });
 });

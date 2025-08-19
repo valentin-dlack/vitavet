@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { AccountDeletionRequest } from './entities/account-deletion-request.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,6 +16,7 @@ describe('AuthService', () => {
   const mockUsersService = {
     create: jest.fn(),
     findByEmail: jest.fn(),
+    findById: jest.fn(),
     validatePassword: jest.fn(),
     findPrimaryRole: jest.fn().mockResolvedValue(null),
     findRolesAndClinics: jest
@@ -23,6 +26,12 @@ describe('AuthService', () => {
 
   const mockJwtService = {
     sign: jest.fn(),
+  };
+
+  const mockDeletionRequestRepo = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -36,6 +45,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: getRepositoryToken(AccountDeletionRequest),
+          useValue: mockDeletionRequestRepo,
         },
       ],
     }).compile();
@@ -86,6 +99,79 @@ describe('AuthService', () => {
       expect(result.user.email).toBe(registerDto.email);
       expect(result.token).toBe('jwt-token');
     });
+  });
+
+  describe('getCurrentUser', () => {
+    it('should return current user data with roles and clinics', async () => {
+      const userId = 'user-123';
+      const mockUser = {
+        id: userId,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockRolesAndClinics = {
+        roles: ['OWNER', 'VET'],
+        clinicIds: ['clinic-1', 'clinic-2'],
+      };
+
+      mockUsersService.findById.mockResolvedValue(mockUser);
+      mockUsersService.findRolesAndClinics.mockResolvedValue(
+        mockRolesAndClinics,
+      );
+
+      const result = await service.getCurrentUser(userId);
+
+      expect(usersService.findById).toHaveBeenCalledWith(userId);
+      expect(usersService.findRolesAndClinics).toHaveBeenCalledWith(userId);
+      expect(result).toEqual({
+        id: userId,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        roles: ['OWNER', 'VET'],
+        clinics: ['clinic-1', 'clinic-2'],
+      });
+    });
+
+    it('should throw UnauthorizedException when user not found', async () => {
+      const userId = 'non-existent-user';
+
+      mockUsersService.findById.mockResolvedValue(null);
+
+      await expect(service.getCurrentUser(userId)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(usersService.findById).toHaveBeenCalledWith(userId);
+    });
+
+    it('should handle empty roles and clinics gracefully', async () => {
+      const userId = 'user-123';
+      const mockUser = {
+        id: userId,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockUsersService.findById.mockResolvedValue(mockUser);
+      mockUsersService.findRolesAndClinics.mockResolvedValue({
+        roles: null,
+        clinicIds: null,
+      });
+
+      const result = await service.getCurrentUser(userId);
+
+      expect(result.roles).toEqual([]);
+      expect(result.clinics).toEqual([]);
+    });
 
     it('should throw ConflictException when user already exists', async () => {
       const registerDto: RegisterDto = {
@@ -126,6 +212,10 @@ describe('AuthService', () => {
 
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
       mockUsersService.validatePassword.mockResolvedValue(true);
+      mockUsersService.findRolesAndClinics.mockResolvedValue({
+        roles: ['OWNER'],
+        clinicIds: ['clinic-1'],
+      });
       mockJwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.login(loginDto);
