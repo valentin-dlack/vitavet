@@ -5,6 +5,10 @@ import { ReminderRule } from './entities/reminder-rule.entity';
 import { ReminderInstance } from './entities/reminder-instance.entity';
 import { NotificationLog } from '../notifications/entities/notification-log.entity';
 import { Appointment } from '../appointments/entities/appointment.entity';
+import {
+  NotificationService,
+  NotificationData,
+} from '../notifications/notification.service';
 
 @Injectable()
 export class RemindersService {
@@ -17,6 +21,7 @@ export class RemindersService {
     private readonly logRepo: Repository<NotificationLog>,
     @InjectRepository(Appointment)
     private readonly appointmentRepo: Repository<Appointment>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async planAppointmentReminders(appointmentId: string): Promise<void> {
@@ -81,34 +86,70 @@ export class RemindersService {
       ],
     });
 
+    let processedCount = 0;
+
     for (const inst of due) {
       // Avoid race conditions if another process is running
       if (inst.status !== 'SCHEDULED') continue;
 
-      // TODO(vm): implement email/sms sending
-      console.log(`Processing reminder ${inst.id} for ${inst.appointmentId}`);
-      const appointment = await this.appointmentRepo.findOne({
-        where: { id: inst.appointmentId! },
-        relations: ['animal', 'animal.owner', 'clinic'],
-      });
-      console.log(`Animal: ${appointment?.animal?.name}`);
-      console.log(
-        `Owner: ${appointment?.animal?.owner?.firstName} ${appointment?.animal?.owner?.lastName}`,
-      );
-      console.log(`Clinic: ${appointment?.clinic?.name}`);
+      try {
+        const appointment = await this.appointmentRepo.findOne({
+          where: { id: inst.appointmentId! },
+          relations: ['animal', 'animal.owner', 'clinic'],
+        });
 
-      await this.logRepo.save(
-        this.logRepo.create({
-          instanceId: inst.id,
-          channel: 'EMAIL', // Default channel for now
-          deliveryStatus: null,
-        }),
-      );
+        if (
+          !appointment ||
+          !appointment.animal ||
+          !appointment.animal.owner ||
+          !appointment.clinic
+        ) {
+          console.log(`Missing data for reminder ${inst.id}, skipping`);
+          inst.status = 'FAILED';
+          await this.instanceRepo.save(inst);
+          continue;
+        }
 
-      inst.status = 'SENT';
-      inst.sendAt = now;
-      await this.instanceRepo.save(inst);
+        // Determine reminder type based on offset
+        let reminderType: 'appointment_24h' | 'appointment_1h' =
+          'appointment_24h';
+        if (inst.rule && inst.rule.offsetDays === 0) {
+          reminderType = 'appointment_1h';
+        }
+
+        // Prepare notification data
+        const notificationData: NotificationData = {
+          recipientEmail: appointment.animal.owner.email,
+          recipientName: `${appointment.animal.owner.firstName} ${appointment.animal.owner.lastName}`,
+          appointmentDate: appointment.startsAt.toLocaleString('fr-FR'),
+          animalName: appointment.animal.name,
+          clinicName: appointment.clinic.name,
+          reminderType,
+        };
+
+        // Send the email
+        const emailSent =
+          await this.notificationService.sendReminderEmail(notificationData);
+
+        // Update instance status
+        inst.status = emailSent ? 'SENT' : 'FAILED';
+        inst.sendAt = now;
+        await this.instanceRepo.save(inst);
+
+        if (emailSent) {
+          processedCount++;
+        }
+
+        console.log(
+          `Processed reminder ${inst.id} for ${appointment.animal.owner.email} - Status: ${inst.status}`,
+        );
+      } catch (error) {
+        console.error(`Error processing reminder ${inst.id}:`, error);
+        inst.status = 'FAILED';
+        await this.instanceRepo.save(inst);
+      }
     }
-    return due.length;
+
+    return processedCount;
   }
 }

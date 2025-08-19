@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
+import { NotificationLog } from '../notifications/entities/notification-log.entity';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -8,7 +9,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'vitavet',
-  entities: [User],
+  entities: [User, NotificationLog],
   synchronize: process.env.NODE_ENV !== 'production', // Auto-create tables in development
   logging: process.env.NODE_ENV !== 'production',
   ssl:

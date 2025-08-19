@@ -13,6 +13,7 @@ import { UserClinicRole } from '../src/users/entities/user-clinic-role.entity';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
+import { NotificationService } from '../src/notifications/notification.service';
 
 describe('Reminders (e2e)', () => {
   let app: INestApplication;
@@ -28,6 +29,14 @@ describe('Reminders (e2e)', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true })
+      .overrideProvider(NotificationService)
+      .useValue({
+        sendReminderEmail: jest.fn().mockResolvedValue(true),
+        logNotification: jest.fn().mockResolvedValue(undefined),
+        getNotificationStats: jest.fn().mockResolvedValue({}),
+        getNotificationLogs: jest.fn().mockResolvedValue([]),
+        testEmailConnection: jest.fn().mockResolvedValue(false),
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
