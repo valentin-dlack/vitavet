@@ -155,9 +155,9 @@ describe('Profile', () => {
     renderWithRouter(<Profile />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Prénom de l\'utilisateur')).toBeInTheDocument();
-      expect(screen.getByLabelText('Nom de l\'utilisateur')).toBeInTheDocument();
-      expect(screen.getByLabelText('Adresse email de l\'utilisateur')).toBeInTheDocument();
+      expect(screen.getByLabelText('Informations du profil')).toBeInTheDocument();
+      expect(screen.getByLabelText('Changer le mot de passe')).toBeInTheDocument();
+      expect(screen.getByLabelText('Demande de suppression de compte')).toBeInTheDocument();
       expect(screen.getByLabelText('Retour à l\'accueil')).toBeInTheDocument();
       expect(screen.getByLabelText('Se déconnecter')).toBeInTheDocument();
     });

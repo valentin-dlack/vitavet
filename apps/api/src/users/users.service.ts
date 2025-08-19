@@ -118,6 +118,21 @@ export class UsersService {
     return bcrypt.compare(password, user.password);
   }
 
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    user.password = hashedPassword;
+    await this.userRepository.save(user);
+  }
+
   async updateEmailVerification(
     userId: string,
     isVerified: boolean,

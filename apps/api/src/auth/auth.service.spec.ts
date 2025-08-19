@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { AccountDeletionRequest } from './entities/account-deletion-request.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -26,6 +28,12 @@ describe('AuthService', () => {
     sign: jest.fn(),
   };
 
+  const mockDeletionRequestRepo = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -37,6 +45,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: getRepositoryToken(AccountDeletionRequest),
+          useValue: mockDeletionRequestRepo,
         },
       ],
     }).compile();
@@ -108,7 +120,9 @@ describe('AuthService', () => {
       };
 
       mockUsersService.findById.mockResolvedValue(mockUser);
-      mockUsersService.findRolesAndClinics.mockResolvedValue(mockRolesAndClinics);
+      mockUsersService.findRolesAndClinics.mockResolvedValue(
+        mockRolesAndClinics,
+      );
 
       const result = await service.getCurrentUser(userId);
 
