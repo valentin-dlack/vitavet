@@ -31,13 +31,11 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName } = registerDto;
 
-    // Check if user already exists
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Create new user
     const user = await this.usersService.create(
       email,
       password,
@@ -45,10 +43,8 @@ export class AuthService {
       lastName,
     );
 
-    // Generate JWT token
     const token = this.generateToken(user, ['OWNER'], []);
 
-    // Return user data without password
     const userWithoutPassword = {
       id: user.id,
       email: user.email,
@@ -63,26 +59,24 @@ export class AuthService {
       user: userWithoutPassword,
       token,
       message:
-        'User registered successfully. Please check your email for verification.',
+        'Utilisateur enregistré avec succès. Veuillez vérifier votre email pour la vérification.',
     };
   }
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
-    // Find user by email
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Identifiants invalides');
     }
 
-    // Validate password
     const isPasswordValid = await this.usersService.validatePassword(
       user,
       password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Identifiants invalides');
     }
 
     const { roles, clinicIds } = await this.usersService.findRolesAndClinics(
@@ -90,16 +84,13 @@ export class AuthService {
     );
     if (!roles || !clinicIds) {
       throw new UnauthorizedException(
-        'Unable to retrieve user roles or clinics',
+        "Impossible de récupérer les rôles ou les cliniques de l'utilisateur",
       );
     }
-    // Generate JWT token
     const token = this.generateToken(user, roles, clinicIds);
 
-    // Resolve primary role for convenience in frontend RBAC display
     const primaryRole = await this.usersService.findPrimaryRole(user.id);
 
-    // Return user data without password
     const userWithoutPassword = {
       id: user.id,
       email: user.email,
@@ -114,7 +105,7 @@ export class AuthService {
     return {
       user: userWithoutPassword,
       token,
-      message: 'Login successful',
+      message: 'Connexion réussie',
     };
   }
 
@@ -125,7 +116,7 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const user = await this.usersService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
     const { roles, clinicIds } = await this.usersService.findRolesAndClinics(
@@ -145,20 +136,18 @@ export class AuthService {
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
     const user = await this.usersService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
-    // Check if email is being changed and if it's already taken
     if (updateProfileDto.email && updateProfileDto.email !== user.email) {
       const existingUser = await this.usersService.findByEmail(
         updateProfileDto.email,
       );
       if (existingUser) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException('Email déjà utilisé');
       }
     }
 
-    // Update user
     const updatedUser = await this.usersService.update(
       userId,
       updateProfileDto,
@@ -169,40 +158,35 @@ export class AuthService {
       email: updatedUser.email,
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
-      message: 'Profile updated successfully',
+      message: 'Modification enregistrée avec succès',
     };
   }
 
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
     const user = await this.usersService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
-    // Validate current password
     const isCurrentPasswordValid = await this.usersService.validatePassword(
       user,
       changePasswordDto.currentPassword,
     );
     if (!isCurrentPasswordValid) {
-      throw new BadRequestException('Current password is incorrect');
+      throw new BadRequestException('Mot de passe actuel incorrect');
     }
 
-    // Check if new password matches confirmation
     if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
-      throw new BadRequestException(
-        'New password and confirmation do not match',
-      );
+      throw new BadRequestException('Les mots de passe ne correspondent pas');
     }
 
-    // Update password
     await this.usersService.updatePassword(
       userId,
       changePasswordDto.newPassword,
     );
 
     return {
-      message: 'Password changed successfully',
+      message: 'Mot de passe modifié avec succès',
     };
   }
 
@@ -212,19 +196,17 @@ export class AuthService {
   ) {
     const user = await this.usersService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
-    // Validate password
     const isPasswordValid = await this.usersService.validatePassword(
       user,
       deleteAccountDto.password,
     );
     if (!isPasswordValid) {
-      throw new BadRequestException('Password is incorrect');
+      throw new BadRequestException('Mot de passe incorrect');
     }
 
-    // Check if there's already a pending request
     const existingRequest = await this.deletionRequestRepo.findOne({
       where: {
         userId,
@@ -234,11 +216,10 @@ export class AuthService {
 
     if (existingRequest) {
       throw new BadRequestException(
-        'You already have a pending deletion request',
+        'Vous avez déjà une demande de suppression en attente',
       );
     }
 
-    // Create deletion request
     const deletionRequest = this.deletionRequestRepo.create({
       userId,
       reason: deleteAccountDto.reason,
@@ -249,7 +230,7 @@ export class AuthService {
 
     return {
       message:
-        'Account deletion request submitted successfully. You will be notified of the decision.',
+        'Demande de suppression de compte soumise avec succès. Vous serez informé de la décision.',
       requestId: deletionRequest.id,
     };
   }

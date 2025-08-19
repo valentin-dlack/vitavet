@@ -10,6 +10,7 @@ vi.mock('../../services/auth.service', () => ({
     isAuthenticated: vi.fn(),
     getCurrentUser: vi.fn(),
     logout: vi.fn(),
+    getDeletionRequestStatus: vi.fn(),
   },
 }));
 
@@ -61,6 +62,7 @@ describe('Profile', () => {
       roles: ['OWNER', 'VET'],
       clinics: ['clinic-1', 'clinic-2'],
     });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue(null);
 
     renderWithRouter(<Profile />);
 
@@ -109,6 +111,7 @@ describe('Profile', () => {
       roles: [],
       clinics: [],
     });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue(null);
 
     renderWithRouter(<Profile />);
 
@@ -128,14 +131,15 @@ describe('Profile', () => {
       roles: ['OWNER'],
       clinics: [],
     });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue(null);
 
     renderWithRouter(<Profile />);
 
     await waitFor(() => {
-      expect(screen.getByText('Se déconnecter')).toBeInTheDocument();
+      expect(screen.getByText('Déconnexion')).toBeInTheDocument();
     });
 
-    screen.getByText('Se déconnecter').click();
+    screen.getByText('Déconnexion').click();
 
     expect(authService.logout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -151,15 +155,63 @@ describe('Profile', () => {
       roles: ['OWNER'],
       clinics: [],
     });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue(null);
 
     renderWithRouter(<Profile />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Informations du profil')).toBeInTheDocument();
-      expect(screen.getByLabelText('Changer le mot de passe')).toBeInTheDocument();
-      expect(screen.getByLabelText('Demande de suppression de compte')).toBeInTheDocument();
-      expect(screen.getByLabelText('Retour à l\'accueil')).toBeInTheDocument();
+      expect(screen.getByLabelText('Modifier le profil')).toBeInTheDocument();
       expect(screen.getByLabelText('Se déconnecter')).toBeInTheDocument();
+      expect(screen.getByLabelText('Retour à l\'accueil')).toBeInTheDocument();
+    });
+  });
+
+  it('should display deletion request status when exists', async () => {
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true);
+    vi.mocked(authService.getCurrentUser).mockResolvedValue({
+      id: 'user-123',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      roles: ['OWNER'],
+      clinics: [],
+    });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue({
+      id: 'req-123',
+      status: 'PENDING',
+      reason: 'Test reason',
+      createdAt: '2024-01-01T00:00:00Z',
+      adminNotes: 'Test notes',
+      processedAt: undefined,
+    });
+
+    renderWithRouter(<Profile />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Demande de suppression')).toBeInTheDocument();
+      expect(screen.getByText('PENDING')).toBeInTheDocument();
+      expect(screen.getByText('Test notes')).toBeInTheDocument();
+    });
+  });
+
+  it('should show action buttons for profile management', async () => {
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true);
+    vi.mocked(authService.getCurrentUser).mockResolvedValue({
+      id: 'user-123',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      roles: ['OWNER'],
+      clinics: [],
+    });
+    vi.mocked(authService.getDeletionRequestStatus).mockResolvedValue(null);
+
+    renderWithRouter(<Profile />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Changer le mot de passe')).toBeInTheDocument();
+      expect(screen.getByText('Supprimer le compte')).toBeInTheDocument();
+      expect(screen.getByText('Modifier')).toBeInTheDocument();
     });
   });
 });
