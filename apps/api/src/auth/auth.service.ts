@@ -110,6 +110,26 @@ export class AuthService {
     return this.usersService.findById(userId);
   }
 
+  async getCurrentUser(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { roles, clinicIds } = await this.usersService.findRolesAndClinics(
+      user.id,
+    );
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: roles || [],
+      clinics: clinicIds || [],
+    };
+  }
+
   private generateToken(
     user: User,
     roles: string[],

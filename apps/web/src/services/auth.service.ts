@@ -23,6 +23,15 @@ export interface User {
   updatedAt: string;
 }
 
+export interface CurrentUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: string[];
+  clinics: string[];
+}
+
 interface DecodedToken {
   sub: string;
   email: string;
@@ -118,6 +127,28 @@ class AuthService {
   removeUser(): void {
     localStorage.removeItem(this.userKey);
     this.emit();
+  }
+
+  async getCurrentUser(): Promise<CurrentUser> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('No authentication token');
+    }
+
+    const response = await fetch(`${this.baseUrl}/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get current user');
+    }
+
+    return response.json();
   }
 
   // Session

@@ -20,3 +20,17 @@ AC: CORS restricted (env-based), headers verified in E2E","MVP","SECURITY"
 "US-01c – Reset password","Story","As a user I want to reset my password so that I can regain access
 AC: POST /api/auth/forgot (dev: logs token), POST /api/auth/reset (token+newPassword)
 AC: Minimal front: 2 forms; no real email in MVP (console/log only)","MVP","AUTH"
+"US-15 – Clinic details page","Story","As a pet owner I want to view clinic page so that I decide to book
+AC: address, hours, pricing
+AC: GET /api/clinics/:id returns detailed info
+AC: Web page /clinics/:id shows clinic details with booking button","MVP","SEARCH"
+"US-16 – Add animal as owner","Story","As a pet owner I want to add my animal so that I can book appointments
+AC: POST /api/animals {name,species,breed,age,weight}
+AC: Form validation, success feedback
+AC: Animal appears in my animals list
+AC: Web page /animals/new with form","MVP","PROFILE"
+"US-17 – Reject appointment","Story","As ASV/VET I want to reject RDV so that conflict solved
+AC: PATCH /api/appointments/:id {status: 'REJECTED', rejectionReason}
+AC: Email notification to owner
+AC: Status visible in agenda
+AC: Rejection reason logged","MVP","RDV"

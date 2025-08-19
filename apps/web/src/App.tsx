@@ -5,7 +5,7 @@ import { Login } from './pages/Login';
 import { Clinics } from './pages/Clinics';
 import { ClinicDetail } from './pages/ClinicDetail';
 import { ClinicAvailability } from './pages/ClinicAvailability';
-import { Profile } from './pages/Profile';
+import Profile from './pages/Profile';
 import { Unauthorized } from './pages/Unauthorized';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PendingAppointments } from './pages/PendingAppointments';
