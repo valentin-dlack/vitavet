@@ -1,13 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import * as dotenv from 'dotenv';
+import './env';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-// Load environment variables
-dotenv.config();
+// env loaded by src/env.ts
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
