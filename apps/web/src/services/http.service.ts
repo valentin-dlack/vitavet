@@ -1,7 +1,7 @@
 import { authService } from './auth.service';
 
 class HttpService {
-  private baseUrl = '/api';
+  private baseUrl = (import.meta as unknown as ImportMeta)?.env?.VITE_API_BASE_URL || '/api';
 
   private async request<T>(
     endpoint: string,
