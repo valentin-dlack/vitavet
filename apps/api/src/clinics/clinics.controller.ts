@@ -20,8 +20,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateClinicDto } from './dto/create-clinic.dto';
 import { Clinic } from './entities/clinic.entity';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('clinics')
+@ApiTags('clinics')
+@ApiBearerAuth()
 export class ClinicsController {
   constructor(private readonly clinicsService: ClinicsService) {}
 

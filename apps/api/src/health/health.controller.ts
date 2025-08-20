@@ -1,9 +1,8 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { HealthService } from './health.service';
 
 @Controller('health')
-@UseGuards(ThrottlerGuard)
+@UseGuards()
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
