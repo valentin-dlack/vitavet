@@ -6,7 +6,7 @@
   "scripts": {
     "test": "pnpm --filter api test && pnpm --filter web test:run",
     "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\"",
-    "build": "pnpm --filter api build && pnpm --filter web build && pnpm sentry:sourcemaps",
+    "build": "pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm --filter api lint && pnpm --filter web lint",
     "format": "pnpm --filter api format && pnpm --filter web format",
     "test:e2e": "pnpm --filter api test:e2e",
