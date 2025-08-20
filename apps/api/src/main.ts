@@ -19,8 +19,10 @@ async function bootstrap() {
   // Express-specific setting is available through Nest's adapter
   app.set('trust proxy', true);
 
-  // CORS configuration (restrict by environment variable)
-  const origins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+  // CORS configuration (restrict by environment variable). If CORS_ORIGINS="*", allow all origins.
+  const corsEnv = process.env.CORS_ORIGINS || 'http://localhost:5173';
+  const allowAllOrigins = corsEnv.trim() === '*';
+  const origins = (allowAllOrigins ? '' : corsEnv)
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
@@ -34,8 +36,12 @@ async function bootstrap() {
       ) => void,
     ): void => {
       // Allow requests without Origin (e.g., curl, tests)
-      if (!origin) return callback(null, true);
-      if (origins.includes(origin)) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowAllOrigins || origins.includes(origin)) {
+        return callback(null, true);
+      }
       // Disallow by omitting CORS headers
       return callback(null, false);
     },
