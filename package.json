@@ -17,7 +17,8 @@
     "commit-msg": "husky",
     "db:dump": "node scripts/db-dump.mjs",
     "db:reset": "pnpm --filter api db:reset",
-    "api:seed": "pnpm --filter api seed:dev"
+    "api:seed": "pnpm --filter api seed:dev",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org $SENTRY_ORG --project $SENTRY_PROJECT ./apps/api/dist && sentry-cli sourcemaps upload --org $SENTRY_ORG --project $SENTRY_PROJECT ./apps/api/dist"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,9 @@
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@sentry/cli": "^2.52.0",
+    "@sentry/nestjs": "^10.5.0",
+    "@sentry/profiling-node": "^10.5.0",
     "jwt-decode": "^4.0.0",
     "path": "^0.12.7",
     "swagger-ui-express": "^5.0.1"
