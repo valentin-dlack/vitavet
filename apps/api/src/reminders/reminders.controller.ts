@@ -1,12 +1,11 @@
 import { Controller, Post, Param, UseGuards, Get, Query } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RemindersService } from './reminders.service';
 
 @Controller('reminders')
-@UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RemindersController {
   constructor(private readonly remindersService: RemindersService) {}
 

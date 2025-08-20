@@ -2,13 +2,12 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AgendaService, AgendaItem } from './agenda.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { User } from '../users/entities/user.entity';
 
 @Controller('agenda')
-@UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AgendaController {
   constructor(private readonly agendaService: AgendaService) {}
 

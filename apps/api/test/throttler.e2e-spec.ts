@@ -13,6 +13,12 @@ describe('Throttler (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
+    // simulate trusted proxy in tests
+    // trust proxy for proper X-Forwarded-For handling
+    (app as unknown as { set: (name: string, value: unknown) => void }).set(
+      'trust proxy',
+      true,
+    );
     await app.init();
   });
 

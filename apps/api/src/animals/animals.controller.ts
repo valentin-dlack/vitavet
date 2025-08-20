@@ -10,14 +10,13 @@ import {
 import { AnimalsService } from './animals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { User } from '../users/entities/user.entity';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateAnimalDto } from './dto/create-animal.dto';
 
 @Controller('animals')
-@UseGuards(ThrottlerGuard, JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AnimalsController {
   constructor(private readonly animalsService: AnimalsService) {}
 
