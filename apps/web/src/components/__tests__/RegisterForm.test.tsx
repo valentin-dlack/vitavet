@@ -128,7 +128,6 @@ describe('RegisterForm', () => {
         email: 'test@example.com',
         password: 'Password123!',
       });
-      expect(mockAuthService.setToken).toHaveBeenCalledWith('jwt-token');
       expect(mockOnSuccess).toHaveBeenCalledWith('User registered successfully');
     });
   });

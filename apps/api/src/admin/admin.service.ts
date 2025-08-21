@@ -23,7 +23,7 @@ export class AdminService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Create the user with the 'ASV' role.
+    // Create the user and assign ASV role by default
     const user = await this.usersService.create(
       email,
       password,

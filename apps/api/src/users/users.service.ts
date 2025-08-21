@@ -8,7 +8,8 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { UserClinicRole } from './entities/user-clinic-role.entity';
-import type { UserRole } from 'src/auth/guards/roles.guard';
+import { UserGlobalRole } from './entities/user-global-role.entity';
+import { UserRole } from 'src/auth/guards/roles.guard';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +18,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserClinicRole)
     private readonly userClinicRoleRepository: Repository<UserClinicRole>,
+    @InjectRepository(UserGlobalRole)
+    private readonly userGlobalRoleRepository: Repository<UserGlobalRole>,
   ) {}
 
   async create(
@@ -25,6 +28,7 @@ export class UsersService {
     firstName: string,
     lastName: string,
     role: UserRole = 'OWNER',
+    clinicId: string = '',
   ): Promise<User> {
     // Check if user already exists
     const existingUser = await this.userRepository.findOne({
@@ -49,17 +53,15 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // If a role is provided and it's not the default 'OWNER',
-    // we might need to create a UserClinicRole entry if a clinic context is required.
-    // For now, let's keep it simple: the role is just a property on the user.
-    // The complexity of UserClinicRole is for clinic-specific roles.
-    // A default role on the user can be a fallback.
-    // The US-08f will handle UserClinicRole creation.
-
-    if (role !== 'OWNER') {
-      // This part is tricky without a clinicId.
-      // Let's assume for now that creating an ASV user doesn't link them to a clinic yet.
-      // That will be the job of US-08f.
+    //if no role is provided, assign OWNER role by default
+    if (!role && !clinicId) {
+      await this.assignGlobalRole(savedUser.id, 'OWNER');
+    } else if (role === 'WEBMASTER') {
+      await this.assignGlobalRole(savedUser.id, 'WEBMASTER');
+    } else if (role === 'OWNER') {
+      await this.assignGlobalRole(savedUser.id, 'OWNER');
+    } else {
+      await this.assignClinicRole(savedUser.id, role, clinicId);
     }
 
     return savedUser;
@@ -97,20 +99,41 @@ export class UsersService {
   async findPrimaryRole(
     userId: string,
   ): Promise<UserClinicRole['role'] | null> {
-    const link = await this.userClinicRoleRepository.findOne({
+    // Check for global roles first (WEBMASTER takes precedence)
+    const globalRole = await this.userGlobalRoleRepository.findOne({
+      where: { userId, role: 'WEBMASTER' },
+    });
+    if (globalRole) return 'WEBMASTER';
+
+    // Check for clinic roles
+    const clinicRole = await this.userClinicRoleRepository.findOne({
       where: { userId },
     });
-    return link?.role ?? null;
+    if (clinicRole?.role) return clinicRole.role;
+
+    // Check if user has OWNER global role
+    const ownerRole = await this.userGlobalRoleRepository.findOne({
+      where: { userId, role: 'OWNER' },
+    });
+    if (ownerRole) return 'OWNER';
+
+    return null; // No role assigned
   }
 
   async findRolesAndClinics(
     userId: string,
   ): Promise<{ roles: UserClinicRole['role'][]; clinicIds: string[] }> {
-    const links = await this.userClinicRoleRepository.find({
-      where: { userId },
-    });
-    const roles = links.map((link) => link.role);
-    const clinicIds = links.map((link) => link.clinicId);
+    const [globalRoles, clinicRoles] = await Promise.all([
+      this.userGlobalRoleRepository.find({ where: { userId } }),
+      this.userClinicRoleRepository.find({ where: { userId } }),
+    ]);
+
+    const globalRoleNames = globalRoles.map((role) => role.role);
+    const clinicRoleNames = clinicRoles.map((role) => role.role);
+    const clinicIds = clinicRoles.map((role) => role.clinicId);
+
+    // Combine global and clinic roles
+    const roles = [...globalRoleNames, ...clinicRoleNames];
     return { roles, clinicIds };
   }
 
@@ -146,6 +169,49 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  async assignGlobalRole(
+    userId: string,
+    role: 'OWNER' | 'WEBMASTER',
+  ): Promise<void> {
+    const existingRole = await this.userGlobalRoleRepository.findOne({
+      where: { userId, role },
+    });
+
+    if (!existingRole) {
+      const globalRole = this.userGlobalRoleRepository.create({ userId, role });
+      await this.userGlobalRoleRepository.save(globalRole);
+    }
+  }
+
+  async assignClinicRole(
+    userId: string,
+    role: UserRole,
+    clinicId: string,
+  ): Promise<void> {
+    const existingRole = await this.userClinicRoleRepository.findOne({
+      where: { userId, role, clinicId },
+    });
+
+    if (!existingRole) {
+      const clinicRole = this.userClinicRoleRepository.create({
+        userId,
+        role,
+        clinicId,
+      });
+      await this.userClinicRoleRepository.save(clinicRole);
+    }
+  }
+
+  async removeClinicRole(userId: string, clinicId: string): Promise<void> {
+    const existingRole = await this.userClinicRoleRepository.findOne({
+      where: { userId, clinicId },
+    });
+
+    if (existingRole) {
+      await this.userClinicRoleRepository.delete(existingRole);
+    }
+  }
+
   async findAll(): Promise<(Omit<User, 'password'> & { role?: string })[]> {
     const users = await this.userRepository.find();
     const usersWithRoles = await Promise.all(
@@ -160,7 +226,7 @@ export class UsersService {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           fullName: user.fullName,
-          role: primaryRole || 'OWNER', // Default to OWNER if no role found
+          role: primaryRole || undefined, // No default role
         };
       }),
     );

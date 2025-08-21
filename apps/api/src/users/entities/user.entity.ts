@@ -31,6 +31,9 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
+  // globalRole is now managed through UserGlobalRole entity
+  // This column will be removed in a future migration
+
   @CreateDateColumn()
   createdAt: Date;
 

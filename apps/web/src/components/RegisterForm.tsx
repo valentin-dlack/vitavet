@@ -64,7 +64,6 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
     setLoading(true);
     try {
       const response = await authService.register(formData);
-      authService.setToken(response.token);
       onSuccess(response.message);
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Registration failed');
