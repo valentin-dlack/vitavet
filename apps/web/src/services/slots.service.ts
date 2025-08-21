@@ -13,7 +13,7 @@ export interface AvailableSlot {
 }
 
 class SlotsService {
-	private baseUrl = '/api/slots';
+	private baseUrl = ((import.meta as unknown as ImportMeta)?.env?.VITE_API_BASE_URL || '/api') + '/slots';
 
 	async getAvailableSlots(params: GetSlotsParams): Promise<AvailableSlot[]> {
 		const url = new URL(this.baseUrl, window.location.origin);

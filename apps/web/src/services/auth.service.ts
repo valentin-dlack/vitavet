@@ -74,7 +74,7 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseUrl = '/api/auth';
+  private baseUrl = ((import.meta as unknown as ImportMeta)?.env?.VITE_API_BASE_URL || '/api') + '/auth';
   private tokenKey = 'authToken';
   private userKey = 'authUser';
   private listeners = new Set<() => void>();

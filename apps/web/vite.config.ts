@@ -19,9 +19,7 @@ export default defineConfig({
       },
     }
   })(),
-  // Preview config - disable proxy completely for now
   preview: {
     allowedHosts: true,
-    // proxy disabled - using absolute API URLs
   },
 })
