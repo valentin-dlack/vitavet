@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminService } from './admin.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateClinicDto } from '../clinics/dto/create-clinic.dto';
 
 @Controller('admin')
@@ -31,10 +32,7 @@ export class AdminController {
 
   @Patch('users/:id')
   @Roles('WEBMASTER')
-  updateUser(
-    @Param('id') id: string,
-    @Body() updateUserDto: Partial<CreateUserDto>,
-  ) {
+  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.adminService.updateUser(id, updateUserDto);
   }
 

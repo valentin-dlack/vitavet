@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import type { AdminUserDto } from '../../services/admin.service';
+import type { ClinicDto } from '../../services/clinics.service';
+
+type UserRole = 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC' | 'WEBMASTER';
+
+const roleOptions: { value: UserRole; label: string; description: string }[] = [
+  { value: 'OWNER', label: 'Propriétaire', description: 'Rôle global - Accès aux animaux et rendez-vous' },
+  { value: 'VET', label: 'Vétérinaire', description: 'Rôle clinique - Accès aux rendez-vous et agenda' },
+  { value: 'ASV', label: 'ASV', description: 'Rôle clinique - Assistant vétérinaire' },
+  { value: 'ADMIN_CLINIC', label: 'Admin Clinique', description: 'Rôle clinique - Gestion de la clinique' },
+  { value: 'WEBMASTER', label: 'Webmaster', description: 'Rôle global - Accès administrateur complet' },
+];
 
 export function AdminEditUser() {
   const { userId } = useParams<{ userId: string }>();
@@ -9,31 +20,42 @@ export function AdminEditUser() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AdminUserDto | null>(null);
+  const [clinics, setClinics] = useState<ClinicDto[]>([]);
   
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
     lastName: '',
+    role: 'ASV' as UserRole,
+    clinicId: '',
   });
 
   useEffect(() => {
-    if (!userId) return;
+    const fetchData = async () => {
+      if (!userId) return;
 
-    const fetchUser = async () => {
       setLoading(true);
       setError(null);
       try {
-        const users = await adminService.getUsers();
+        const [users, clinicsData] = await Promise.all([
+          adminService.getUsers(),
+          adminService.getClinics(),
+        ]);
+        
         const userData = users.find(u => u.id === userId);
         if (!userData) {
           setError('Utilisateur non trouvé');
           return;
         }
+        
         setUser(userData);
+        setClinics(clinicsData);
         setFormData({
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
+          role: (userData.role as UserRole) || 'ASV',
+          clinicId: '', // We'll need to fetch current clinic role separately
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch user');
@@ -42,7 +64,7 @@ export function AdminEditUser() {
       }
     };
 
-    fetchUser();
+    fetchData();
   }, [userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,8 +73,28 @@ export function AdminEditUser() {
 
     setLoading(true);
     setError(null);
+
+    // Validation
+    const isGlobalRole = (role: UserRole) => role === 'OWNER' || role === 'WEBMASTER';
+    const isClinicRole = (role: UserRole) => role === 'VET' || role === 'ASV' || role === 'ADMIN_CLINIC';
+
+    if (isClinicRole(formData.role) && !formData.clinicId) {
+      setError('Une clinique doit être sélectionnée pour ce rôle');
+      setLoading(false);
+      return;
+    }
+
+    if (isGlobalRole(formData.role) && formData.clinicId) {
+      setError('Les rôles globaux ne peuvent pas être associés à une clinique');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await adminService.updateUser(userId, formData);
+      await adminService.updateUser(userId, {
+        ...formData,
+        clinicId: formData.clinicId || undefined
+      });
       navigate('/admin/users');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -61,10 +103,21 @@ export function AdminEditUser() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear clinic selection if switching to global role
+    if (name === 'role') {
+      const newRole = value as UserRole;
+      const isGlobalRole = newRole === 'OWNER' || newRole === 'WEBMASTER';
+      if (isGlobalRole) {
+        setFormData(prev => ({ ...prev, clinicId: '' }));
+      }
+    }
   };
+
+  const isClinicRole = (role: UserRole) => role === 'VET' || role === 'ASV' || role === 'ADMIN_CLINIC';
 
   if (loading && !user) return <p>Chargement...</p>;
   if (error && !user) return <p className="text-red-500">{error}</p>;
@@ -120,6 +173,48 @@ export function AdminEditUser() {
           />
         </div>
 
+        <div>
+          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+            Rôle
+          </label>
+          <select 
+            id="role" 
+            name="role"
+            value={formData.role} 
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {roleOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label} - {option.description}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {isClinicRole(formData.role) && (
+          <div>
+            <label htmlFor="clinicId" className="block text-sm font-medium text-gray-700">
+              Clinique
+            </label>
+            <select 
+              id="clinicId" 
+              name="clinicId"
+              value={formData.clinicId} 
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Sélectionner une clinique</option>
+              {clinics.map(clinic => (
+                <option key={clinic.id} value={clinic.id}>
+                  {clinic.name} - {clinic.city}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {error && (
           <p className="text-red-500 text-sm">{error}</p>
         )}
@@ -128,14 +223,14 @@ export function AdminEditUser() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
           >
-            {loading ? 'Modification...' : 'Modifier'}
+            {loading ? 'Mise à jour...' : 'Mettre à jour'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/admin/users')}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
           >
             Annuler
           </button>

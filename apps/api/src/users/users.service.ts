@@ -212,6 +212,14 @@ export class UsersService {
     }
   }
 
+  async removeAllRoles(userId: string): Promise<void> {
+    // Remove all global roles
+    await this.userGlobalRoleRepository.delete({ userId });
+
+    // Remove all clinic roles
+    await this.userClinicRoleRepository.delete({ userId });
+  }
+
   async findAll(): Promise<(Omit<User, 'password'> & { role?: string })[]> {
     const users = await this.userRepository.find();
     const usersWithRoles = await Promise.all(
