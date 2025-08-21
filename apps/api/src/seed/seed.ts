@@ -13,6 +13,15 @@ import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
 import { ReminderInstance } from '../reminders/entities/reminder-instance.entity';
 
 async function bootstrap() {
+  // Only allow running in production when explicitly requested (e.g., staging)
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.SEED_ON_DEPLOY !== 'true'
+  ) {
+    console.log('Seed skipped: SEED_ON_DEPLOY is not true');
+    return;
+  }
+
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['log', 'error', 'warn'],
   });
