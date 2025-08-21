@@ -3,8 +3,7 @@ name: Deploy to Railway
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  # Remove pull_request trigger - we only want to deploy on merge to main
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
@@ -41,19 +40,54 @@ jobs:
       - name: Run tests
         run: |
           pnpm --filter api test
-          pnpm --filter web test:cov
+          pnpm --filter web test:run
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy to Railway
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Preview deployment for PRs
-            railway up --service api --detach
-            railway up --service web --detach
-          else
-            # Production deployment for main branch
-            railway up --service api
-            railway up --service web
-          fi
+      - name: Link Railway project
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+
+      - name: Deploy API to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: apps/api
+        run: railway up --detach
+
+      - name: Deploy Web to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: apps/web
+        run: railway up --detach
+
+      - name: Comment deployment URLs
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: services } = await github.rest.railway.services.list({
+              project_id: process.env.RAILWAY_PROJECT_ID,
+              headers: {
+                'Authorization': `Bearer ${process.env.RAILWAY_TOKEN}`
+              }
+            });
+            
+            let comment = '## 🚀 Production Deployment Complete\n\n';
+            comment += 'Your application has been deployed to production:\n\n';
+            
+            services.forEach(service => {
+              if (service.domain) {
+                comment += `- **${service.name}**: https://${service.domain}\n`;
+              }
+            });
+            
+            comment += '\n---\n*Deployed from commit: `' + process.env.GITHUB_SHA + '`*';
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
