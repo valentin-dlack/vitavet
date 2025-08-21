@@ -31,8 +31,8 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
-  @Column({ type: 'text', default: 'OWNER' })
-  globalRole!: 'OWNER' | 'WEBMASTER';
+  // globalRole is now managed through UserGlobalRole entity
+  // This column will be removed in a future migration
 
   @CreateDateColumn()
   createdAt: Date;

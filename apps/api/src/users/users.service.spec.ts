@@ -4,6 +4,15 @@ import { UsersService } from './users.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { UserClinicRole } from './entities/user-clinic-role.entity';
+import { UserGlobalRole } from './entities/user-global-role.entity';
+// Mock bcrypt
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashedPassword'),
+  compare: jest.fn().mockImplementation((password: string) => {
+    // Simulate bcrypt comparison - return true only for correct password
+    return Promise.resolve(password === 'Password123!');
+  }),
+}));
 
 // Simple in-memory mock repository
 function createUserRepositoryMock() {
@@ -72,6 +81,35 @@ describe('UsersService', () => {
           provide: getRepositoryToken(UserClinicRole),
           useValue: {
             findOne: jest.fn().mockResolvedValue(null),
+            find: jest.fn().mockResolvedValue([]),
+            create: jest
+              .fn()
+              .mockImplementation((data: Partial<UserClinicRole>) => ({
+                ...data,
+              })),
+            save: jest
+              .fn()
+              .mockImplementation((data: Partial<UserClinicRole>) =>
+                Promise.resolve({ ...data }),
+              ),
+            delete: jest.fn().mockResolvedValue({ affected: 1 }),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserGlobalRole),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
+            find: jest.fn().mockResolvedValue([]),
+            create: jest
+              .fn()
+              .mockImplementation((data: Partial<UserGlobalRole>) => ({
+                ...data,
+              })),
+            save: jest
+              .fn()
+              .mockImplementation((data: Partial<UserGlobalRole>) =>
+                Promise.resolve({ ...data }),
+              ),
           },
         },
       ],
@@ -223,6 +261,110 @@ describe('UsersService', () => {
       await expect(
         service.updateEmailVerification('nonexistent-id', true),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('role management', () => {
+    it('should assign global role', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = await service.create(
+        userData.email,
+        userData.password,
+        userData.firstName,
+        userData.lastName,
+      );
+
+      await service.assignGlobalRole(user.id, 'WEBMASTER');
+
+      // Mock the repository to return the assigned role
+      const globalRoleRepo = service['userGlobalRoleRepository'];
+      jest.spyOn(globalRoleRepo, 'findOne').mockResolvedValueOnce({
+        userId: user.id,
+        role: 'WEBMASTER',
+      } as UserGlobalRole);
+
+      const primaryRole = await service.findPrimaryRole(user.id);
+      expect(primaryRole).toBe('WEBMASTER');
+    });
+
+    it('should assign clinic role', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = await service.create(
+        userData.email,
+        userData.password,
+        userData.firstName,
+        userData.lastName,
+      );
+
+      await service.assignClinicRole(user.id, 'VET', 'clinic-id');
+
+      // Mock the repository to return the assigned role
+      const clinicRoleRepo = service['userClinicRoleRepository'];
+      jest.spyOn(clinicRoleRepo, 'findOne').mockResolvedValueOnce({
+        userId: user.id,
+        role: 'VET',
+        clinicId: 'clinic-id',
+      } as UserClinicRole);
+
+      const primaryRole = await service.findPrimaryRole(user.id);
+      expect(primaryRole).toBe('VET');
+    });
+
+    it('should find roles and clinics', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const user = await service.create(
+        userData.email,
+        userData.password,
+        userData.firstName,
+        userData.lastName,
+      );
+
+      // Mock repositories to return roles
+      const globalRoleRepo = service['userGlobalRoleRepository'];
+      const clinicRoleRepo = service['userClinicRoleRepository'];
+
+      jest
+        .spyOn(globalRoleRepo, 'find')
+        .mockResolvedValueOnce([
+          { userId: user.id, role: 'OWNER' } as UserGlobalRole,
+        ]);
+      jest.spyOn(clinicRoleRepo, 'find').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          role: 'VET',
+          clinicId: 'clinic-1',
+        } as UserClinicRole,
+        {
+          userId: user.id,
+          role: 'ASV',
+          clinicId: 'clinic-2',
+        } as UserClinicRole,
+      ]);
+
+      const result = await service.findRolesAndClinics(user.id);
+      expect(result.roles).toContain('OWNER');
+      expect(result.roles).toContain('VET');
+      expect(result.roles).toContain('ASV');
+      expect(result.clinicIds).toContain('clinic-1');
+      expect(result.clinicIds).toContain('clinic-2');
     });
   });
 });

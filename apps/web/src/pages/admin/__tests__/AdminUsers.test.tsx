@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminUsers } from '../AdminUsers';
@@ -46,24 +46,33 @@ describe('AdminUsers', () => {
     mockConfirm.mockReturnValue(true);
   });
 
-  it('renders the component with title and create button', () => {
+  it('renders the component with title and create button', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     expect(screen.getByText('Gestion des utilisateurs')).toBeInTheDocument();
     expect(screen.getByText('Créer un utilisateur')).toBeInTheDocument();
   });
 
-  it('displays loading state initially', () => {
+  it('displays loading state initially', async () => {
     mockedAdminService.getUsers.mockImplementation(() => new Promise(() => {}));
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('displays users in table when data is loaded', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('john@example.com')).toBeInTheDocument();
@@ -75,7 +84,10 @@ describe('AdminUsers', () => {
 
   it('displays role badges correctly', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Vétérinaire')).toBeInTheDocument();
@@ -85,7 +97,10 @@ describe('AdminUsers', () => {
 
   it('displays verification status correctly', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('✅ Oui')).toBeInTheDocument();
@@ -96,7 +111,10 @@ describe('AdminUsers', () => {
   it('shows error message when API call fails', async () => {
     const errorMessage = 'Failed to fetch users';
     mockedAdminService.getUsers.mockRejectedValue(new Error(errorMessage));
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
@@ -105,7 +123,10 @@ describe('AdminUsers', () => {
 
   it('shows empty state when no users found', async () => {
     mockedAdminService.getUsers.mockResolvedValue([]);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Aucun utilisateur trouvé')).toBeInTheDocument();
@@ -115,7 +136,10 @@ describe('AdminUsers', () => {
   it('handles user deletion with confirmation', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
     mockedAdminService.deleteUser.mockResolvedValue(undefined);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       const deleteButtons = screen.getAllByText('Supprimer');
@@ -129,7 +153,10 @@ describe('AdminUsers', () => {
   it('does not delete user when confirmation is cancelled', async () => {
     mockConfirm.mockReturnValue(false);
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       const deleteButtons = screen.getAllByText('Supprimer');
@@ -143,7 +170,10 @@ describe('AdminUsers', () => {
     const errorMessage = 'Failed to delete user';
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
     mockedAdminService.deleteUser.mockRejectedValue(new Error(errorMessage));
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       const deleteButtons = screen.getAllByText('Supprimer');
@@ -157,7 +187,10 @@ describe('AdminUsers', () => {
 
   it('has edit links for each user', async () => {
     mockedAdminService.getUsers.mockResolvedValue(mockUsers);
-    renderWithRouter(<AdminUsers />);
+    
+    await act(async () => {
+      renderWithRouter(<AdminUsers />);
+    });
 
     await waitFor(() => {
       const editLinks = screen.getAllByText('Modifier');

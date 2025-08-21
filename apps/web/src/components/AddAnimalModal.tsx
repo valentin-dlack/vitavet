@@ -6,7 +6,7 @@ interface AddAnimalModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  clinicId: string;
+  clinicId?: string;
 }
 
 export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnimalModalProps) {

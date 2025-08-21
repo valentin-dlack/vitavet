@@ -19,6 +19,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { User } from './users/entities/user.entity';
 import { Clinic } from './clinics/entities/clinic.entity';
 import { UserClinicRole } from './users/entities/user-clinic-role.entity';
+import { UserGlobalRole } from './users/entities/user-global-role.entity';
 import { Animal } from './animals/entities/animal.entity';
 import { AppointmentType } from './appointments/entities/appointment-type.entity';
 import { Appointment } from './appointments/entities/appointment.entity';
@@ -51,6 +52,7 @@ import { AccountDeletionRequest } from './auth/entities/account-deletion-request
         Clinic,
         ClinicService,
         UserClinicRole,
+        UserGlobalRole,
         Animal,
         AppointmentType,
         Appointment,
