@@ -31,15 +31,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run tests
-        run: |
-          pnpm --filter api test
-          pnpm --filter web test:run
-
       - name: Build applications
         run: |
           pnpm --filter api build
           pnpm --filter web build
+
+      - name: Run tests
+        run: |
+          pnpm --filter api test
+          pnpm --filter web test:run
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
