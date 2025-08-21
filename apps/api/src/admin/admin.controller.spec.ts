@@ -2,13 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { CreateClinicDto } from '../clinics/dto/create-clinic.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from '../users/entities/user.entity';
 
 describe('AdminController', () => {
   let controller: AdminController;
-  let adminService: jest.Mocked<AdminService>;
+  let service: jest.Mocked<AdminService>;
 
-  const mockUser = {
+  const mockUser: Omit<User, 'password'> = {
     id: 'user-1',
     email: 'test@example.com',
     firstName: 'John',
@@ -17,16 +18,6 @@ describe('AdminController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     fullName: 'John Doe',
-  };
-
-  const mockClinic = {
-    id: 'clinic-1',
-    name: 'Test Clinic',
-    city: 'Paris',
-    postcode: '75001',
-    active: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -48,7 +39,7 @@ describe('AdminController', () => {
     }).compile();
 
     controller = module.get<AdminController>(AdminController);
-    adminService = module.get(AdminService);
+    service = module.get(AdminService);
   });
 
   it('should be defined', () => {
@@ -57,96 +48,126 @@ describe('AdminController', () => {
 
   describe('createUser', () => {
     const createUserDto: CreateUserDto = {
-      email: 'new@example.com',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
       password: 'password123',
-      firstName: 'Jane',
-      lastName: 'Smith',
+      role: 'ASV',
+      clinicId: 'clinic-1',
     };
 
-    it('should create a user', async () => {
-      adminService.createUser.mockResolvedValue(mockUser);
+    it('should create a user successfully', async () => {
+      service.createUser.mockResolvedValue(mockUser);
 
       const result = await controller.createUser(createUserDto);
 
-      expect(adminService.createUser).toHaveBeenCalledWith(createUserDto);
+      expect(service.createUser).toHaveBeenCalledWith(createUserDto);
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should create a user with global role', async () => {
+      const globalRoleDto = { ...createUserDto, role: 'OWNER' as const, clinicId: undefined };
+      service.createUser.mockResolvedValue(mockUser);
+
+      const result = await controller.createUser(globalRoleDto);
+
+      expect(service.createUser).toHaveBeenCalledWith(globalRoleDto);
       expect(result).toEqual(mockUser);
     });
   });
 
   describe('updateUser', () => {
-    const userId = 'user-1';
-    const updateUserDto = {
-      firstName: 'Updated',
-      lastName: 'Name',
+    const updateUserDto: UpdateUserDto = {
+      email: 'updated@example.com',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      role: 'VET',
+      clinicId: 'clinic-2',
     };
 
-    it('should update a user', async () => {
-      const updatedUser = { ...mockUser, ...updateUserDto };
-      adminService.updateUser.mockResolvedValue(updatedUser);
+    it('should update a user successfully', async () => {
+      service.updateUser.mockResolvedValue(mockUser);
 
-      const result = await controller.updateUser(userId, updateUserDto);
+      const result = await controller.updateUser('user-1', updateUserDto);
 
-      expect(adminService.updateUser).toHaveBeenCalledWith(
-        userId,
-        updateUserDto,
-      );
-      expect(result).toEqual(updatedUser);
+      expect(service.updateUser).toHaveBeenCalledWith('user-1', updateUserDto);
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should update user with role change', async () => {
+      const roleChangeDto = { role: 'WEBMASTER' as const, clinicId: undefined };
+      service.updateUser.mockResolvedValue(mockUser);
+
+      const result = await controller.updateUser('user-1', roleChangeDto);
+
+      expect(service.updateUser).toHaveBeenCalledWith('user-1', roleChangeDto);
+      expect(result).toEqual(mockUser);
     });
   });
 
   describe('removeUser', () => {
-    const userId = 'user-1';
+    it('should remove a user successfully', async () => {
+      service.removeUser.mockResolvedValue();
 
-    it('should remove a user', async () => {
-      adminService.removeUser.mockResolvedValue(undefined);
+      await controller.removeUser('user-1');
 
-      await controller.removeUser(userId);
-
-      expect(adminService.removeUser).toHaveBeenCalledWith(userId);
+      expect(service.removeUser).toHaveBeenCalledWith('user-1');
     });
   });
 
   describe('updateClinic', () => {
-    const clinicId = 'clinic-1';
-    const updateClinicDto: Partial<CreateClinicDto> = {
+    const updateClinicDto = {
       name: 'Updated Clinic',
       city: 'Lyon',
     };
 
-    it('should update a clinic', async () => {
-      const updatedClinic = { ...mockClinic, ...updateClinicDto };
-      adminService.updateClinic.mockResolvedValue(updatedClinic);
+    it('should update a clinic successfully', async () => {
+      const mockClinic = { 
+        id: 'clinic-1', 
+        name: 'Updated Clinic',
+        city: 'Lyon',
+        postcode: '69000',
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      service.updateClinic.mockResolvedValue(mockClinic);
 
-      const result = await controller.updateClinic(clinicId, updateClinicDto);
+      const result = await controller.updateClinic('clinic-1', updateClinicDto);
 
-      expect(adminService.updateClinic).toHaveBeenCalledWith(
-        clinicId,
-        updateClinicDto,
-      );
-      expect(result).toEqual(updatedClinic);
+      expect(service.updateClinic).toHaveBeenCalledWith('clinic-1', updateClinicDto);
+      expect(result).toEqual(mockClinic);
     });
   });
 
   describe('findAllUsers', () => {
     it('should return all users', async () => {
       const users = [mockUser];
-      adminService.findAllUsers.mockResolvedValue(users);
+      service.findAllUsers.mockResolvedValue(users);
 
       const result = await controller.findAllUsers();
 
-      expect(adminService.findAllUsers).toHaveBeenCalled();
+      expect(service.findAllUsers).toHaveBeenCalled();
       expect(result).toEqual(users);
     });
   });
 
   describe('findAllClinics', () => {
     it('should return all clinics', async () => {
-      const clinics = [mockClinic];
-      adminService.findAllClinics.mockResolvedValue(clinics);
+      const clinics = [{ 
+        id: 'clinic-1', 
+        name: 'Test Clinic',
+        city: 'Paris',
+        postcode: '75001',
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }];
+      service.findAllClinics.mockResolvedValue(clinics);
 
       const result = await controller.findAllClinics();
 
-      expect(adminService.findAllClinics).toHaveBeenCalled();
+      expect(service.findAllClinics).toHaveBeenCalled();
       expect(result).toEqual(clinics);
     });
   });

@@ -23,12 +23,16 @@ interface CreateUserPayload {
   firstName: string;
   lastName: string;
   password: string;
+  role: string;
+  clinicId?: string;
 }
 
 interface UpdateUserPayload {
   email?: string;
   firstName?: string;
   lastName?: string;
+  role?: string;
+  clinicId?: string;
 }
 
 interface CreateClinicPayload {
