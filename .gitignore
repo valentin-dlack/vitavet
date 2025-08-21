@@ -103,3 +103,6 @@ Thumbs.db
 
 # Railway
 .railway/
+
+# Sentry Config File
+.sentryclirc

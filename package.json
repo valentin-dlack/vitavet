@@ -4,14 +4,43 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\""
+    "test": "pnpm --filter api test && pnpm --filter web test:run",
+    "dev": "concurrently -k -n API,WEB -c green,blue \"pnpm --filter ./apps/api start:dev\" \"pnpm --filter ./apps/web dev\"",
+    "build": "pnpm --filter api build && pnpm --filter web build",
+    "lint": "pnpm --filter api lint && pnpm --filter web lint",
+    "format": "pnpm --filter api format && pnpm --filter web format",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "coverage": "pnpm --filter api test:cov && pnpm --filter api test:e2e:cov && pnpm --filter web test:cov",
+    "coverage:summary": "node scripts/coverage-summary.mjs",
+    "coverage:summary:simple": "node scripts/coverage-summary.mjs --simple",
+    "prepare": "husky",
+    "commit-msg": "husky",
+    "db:dump": "node scripts/db-dump.mjs",
+    "db:reset": "pnpm --filter api db:reset",
+    "api:seed": "pnpm --filter api seed:dev",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org $SENTRY_ORG --project $SENTRY_PROJECT ./apps/api/dist && sentry-cli sourcemaps upload --org $SENTRY_ORG --project $SENTRY_PROJECT ./apps/api/dist"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
-    "concurrently": "^9.2.0"
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "concurrently": "^9.2.0",
+    "husky": "^9.1.7"
+  },
+  "dependencies": {
+    "@nestjs/schedule": "^6.0.0",
+    "@nestjs/serve-static": "^5.0.3",
+    "@nestjs/swagger": "^11.2.0",
+    "@nestjs/throttler": "^6.4.0",
+    "@nestjs/typeorm": "^11.0.0",
+    "@sentry/cli": "^2.52.0",
+    "@sentry/nestjs": "^10.5.0",
+    "@sentry/profiling-node": "^10.5.0",
+    "jwt-decode": "^4.0.0",
+    "path": "^0.12.7",
+    "swagger-ui-express": "^5.0.1"
   }
 }

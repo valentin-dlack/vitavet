@@ -1,0 +1,78 @@
+name: Tests and Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: vitavet
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: vitavet
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run API unit tests with coverage
+        run: pnpm --filter api test:cov
+
+      - name: Run API e2e tests with coverage
+        run: pnpm --filter api test:e2e:cov
+
+      - name: Run Web unit tests with coverage
+        run: pnpm --filter web test:cov
+
+      - name: Generate combined coverage summary
+        run: |
+          pnpm coverage:summary | tee coverage-summary.txt
+          node scripts/coverage-summary.mjs --simple | tee coverage-summary-simple.txt
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat coverage-summary.txt >> $GITHUB_STEP_SUMMARY
+
+      - name: Annotate PR with summary
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          path: coverage-summary-simple.txt
