@@ -1,11 +1,9 @@
 import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
 
-enum UserRole {
-  OWNER = 'OWNER',
+enum ClinicRole {
   VET = 'VET',
   ASV = 'ASV',
   ADMIN_CLINIC = 'ADMIN_CLINIC',
-  WEBMASTER = 'WEBMASTER',
 }
 
 export class AssignRoleDto {
@@ -13,9 +11,9 @@ export class AssignRoleDto {
   @IsNotEmpty()
   userId: string;
 
-  @IsEnum(UserRole, {
-    message: `Role must be one of the following values: ${Object.values(UserRole).join(', ')}`,
+  @IsEnum(ClinicRole, {
+    message: `Role must be one of the following values: ${Object.values(ClinicRole).join(', ')}`,
   })
   @IsNotEmpty()
-  role: UserRole;
+  role: ClinicRole;
 }

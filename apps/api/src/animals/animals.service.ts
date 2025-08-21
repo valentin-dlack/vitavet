@@ -36,16 +36,6 @@ export class AnimalsService {
       throw new NotFoundException('Clinic not found');
     }
 
-    // Verify user has OWNER role in this clinic
-    const userRole = await this.userClinicRoleRepository.findOne({
-      where: { userId: ownerId, clinicId: createDto.clinicId, role: 'OWNER' },
-    });
-    if (!userRole) {
-      throw new ForbiddenException(
-        'You must be an owner in this clinic to add animals',
-      );
-    }
-
     // Create the animal
     const animal = this.animalRepository.create({
       ...createDto,

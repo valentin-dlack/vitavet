@@ -45,6 +45,8 @@ async function bootstrap() {
       .catch(
         async () => (await usersService.findByEmail('owner@example.com'))!,
       );
+    // Ensure explicit global role OWNER
+    await usersService.update(owner.id, { globalRole: 'OWNER' as never });
 
     const vet1 = await usersService
       .create('vet1@example.com', 'password123', 'Victor', 'Vet')
@@ -69,6 +71,10 @@ async function bootstrap() {
       .catch(
         async () => (await usersService.findByEmail('webmaster@example.com'))!,
       );
+    // Ensure webmaster has global WEBMASTER role (not clinic-bound)
+    await usersService.update(webmaster.id, {
+      globalRole: 'WEBMASTER' as never,
+    });
 
     // Create clinic
     let clinic = await clinicRepo.findOne({
@@ -86,7 +92,6 @@ async function bootstrap() {
 
     // Roles
     const roles = [
-      { userId: owner.id, clinicId: clinic.id, role: 'OWNER' as const },
       { userId: vet1.id, clinicId: clinic.id, role: 'VET' as const },
       { userId: vet2.id, clinicId: clinic.id, role: 'VET' as const },
       { userId: asv.id, clinicId: clinic.id, role: 'ASV' as const },
@@ -94,11 +99,6 @@ async function bootstrap() {
         userId: adminClinic.id,
         clinicId: clinic.id,
         role: 'ADMIN_CLINIC' as const,
-      },
-      {
-        userId: webmaster.id,
-        clinicId: clinic.id,
-        role: 'WEBMASTER' as const,
       },
     ];
 

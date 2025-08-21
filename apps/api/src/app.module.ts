@@ -36,6 +36,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { AccountDeletionRequest } from './auth/entities/account-deletion-request.entity';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { SentryGlobalFilter } from '@sentry/nestjs/setup';
         NotificationLog,
         TimeSlot,
         Document,
+        AccountDeletionRequest,
       ],
     }),
     ThrottlerModule.forRoot([

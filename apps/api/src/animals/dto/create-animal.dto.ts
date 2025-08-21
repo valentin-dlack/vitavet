@@ -7,6 +7,7 @@ import {
   IsNumber,
   Min,
   Max,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateAnimalDto {
@@ -57,6 +58,6 @@ export class CreateAnimalDto {
   @IsBoolean()
   isNac?: boolean;
 
-  @IsString()
+  @IsUUID()
   clinicId!: string;
 }

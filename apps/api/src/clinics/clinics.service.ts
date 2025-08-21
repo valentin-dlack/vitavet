@@ -65,7 +65,6 @@ export class ClinicsService {
   ): Promise<UserClinicRole> {
     const { userId, role } = assignRoleDto;
 
-    // Verify clinic and user exist
     const clinic = await this.clinicRepository.findOne({
       where: { id: clinicId },
     });

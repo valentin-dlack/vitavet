@@ -45,6 +45,7 @@ export class UsersService {
       firstName,
       lastName,
       isEmailVerified: false, // Admins can create users, but they need to verify
+      globalRole: 'OWNER',
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -97,20 +98,27 @@ export class UsersService {
   async findPrimaryRole(
     userId: string,
   ): Promise<UserClinicRole['role'] | null> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) return null;
+    if (user.globalRole === 'WEBMASTER') return 'WEBMASTER';
+
     const link = await this.userClinicRoleRepository.findOne({
       where: { userId },
     });
-    return link?.role ?? null;
+    if (link?.role) return link.role;
+    return 'OWNER';
   }
 
   async findRolesAndClinics(
     userId: string,
   ): Promise<{ roles: UserClinicRole['role'][]; clinicIds: string[] }> {
-    const links = await this.userClinicRoleRepository.find({
-      where: { userId },
-    });
-    const roles = links.map((link) => link.role);
+    const [user, links] = await Promise.all([
+      this.userRepository.findOne({ where: { id: userId } }),
+      this.userClinicRoleRepository.find({ where: { userId } }),
+    ]);
+    const clinicRoles = links.map((link) => link.role);
     const clinicIds = links.map((link) => link.clinicId);
+    const roles = [user?.globalRole || 'OWNER', ...clinicRoles];
     return { roles, clinicIds };
   }
 
@@ -160,6 +168,7 @@ export class UsersService {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           fullName: user.fullName,
+          globalRole: user.globalRole,
           role: primaryRole || 'OWNER', // Default to OWNER if no role found
         };
       }),

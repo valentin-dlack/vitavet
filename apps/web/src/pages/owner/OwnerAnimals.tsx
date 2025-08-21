@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { animalsService, type AnimalDto } from '../../services/animals.service';
 import { AddAnimalModal } from '../../components/AddAnimalModal';
 import { AnimalDetailsModal } from '../../components/AnimalDetailsModal';
@@ -12,7 +12,7 @@ export function OwnerAnimals() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [userClinicId, setUserClinicId] = useState<string>('');
 
-  const loadAnimals = () => {
+  const loadAnimals = useCallback(() => {
     setLoading(true);
     setError(null);
     animalsService
@@ -20,7 +20,7 @@ export function OwnerAnimals() {
       .then(setAnimals)
       .catch((e) => setError(e instanceof Error ? e.message : 'Erreur'))
       .finally(() => setLoading(false));
-  };
+  }, [userClinicId]);
 
   useEffect(() => {
     // Get user's clinic ID
@@ -30,10 +30,8 @@ export function OwnerAnimals() {
   }, []);
 
   useEffect(() => {
-    if (userClinicId !== '') {
-      loadAnimals();
-    }
-  }, [userClinicId]);
+    loadAnimals();
+  }, [loadAnimals]);
 
   const handleAddSuccess = () => {
     loadAnimals();

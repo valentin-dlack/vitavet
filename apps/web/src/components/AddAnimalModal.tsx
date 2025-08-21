@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { animalsService } from '../services/animals.service';
+import { clinicsService, type ClinicDto } from '../services/clinics.service';
 
 interface AddAnimalModalProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface AddAnimalModalProps {
 export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnimalModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clinics, setClinics] = useState<ClinicDto[]>([]);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>(clinicId || '');
   const [formData, setFormData] = useState({
     name: '',
     birthdate: '',
@@ -35,6 +38,20 @@ export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnim
     }
   }, [isOpen]);
 
+  // Load clinics when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    clinicsService
+      .search('')
+      .then(setClinics)
+      .catch(() => setClinics([]));
+  }, [isOpen]);
+
+  // Sync selected clinic with prop changes
+  useEffect(() => {
+    setSelectedClinicId(clinicId || '');
+  }, [clinicId]);
+
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -57,7 +74,7 @@ export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnim
     try {
       const animalData = {
         ...formData,
-        clinicId,
+        clinicId: selectedClinicId,
         weightKg: formData.weightKg ? parseFloat(formData.weightKg) : undefined,
         heightCm: formData.heightCm ? parseInt(formData.heightCm) : undefined,
         isSterilized: formData.isSterilized,
@@ -124,6 +141,28 @@ export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnim
 
         <form onSubmit={handleSubmit} aria-labelledby="add-animal-title">
           <div className="space-y-4">
+            {/* Clinic selection */}
+            <div>
+              <label htmlFor="clinicId" className="block text-sm font-medium text-gray-700 mb-1">
+                Clinique * <span className="sr-only">(obligatoire)</span>
+              </label>
+              <select
+                id="clinicId"
+                name="clinicId"
+                value={selectedClinicId}
+                onChange={(e) => setSelectedClinicId(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Sélectionner une clinique…</option>
+                {clinics.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — {c.postcode} {c.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Name - Required */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -320,7 +359,7 @@ export function AddAnimalModal({ isOpen, onClose, onSuccess, clinicId }: AddAnim
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              disabled={loading}
+              disabled={loading || !selectedClinicId}
             >
               {loading ? 'Création...' : 'Créer l\'animal'}
             </button>
