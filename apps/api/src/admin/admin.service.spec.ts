@@ -88,7 +88,11 @@ describe('AdminService', () => {
     });
 
     it('should create a user with global role successfully', async () => {
-      const globalRoleDto = { ...createUserDto, role: 'OWNER' as const, clinicId: undefined };
+      const globalRoleDto = {
+        ...createUserDto,
+        role: 'OWNER' as const,
+        clinicId: undefined,
+      };
       usersService.findByEmail.mockResolvedValue(null);
       usersService.create.mockResolvedValue(mockUser as User);
 
@@ -123,7 +127,11 @@ describe('AdminService', () => {
     });
 
     it('should throw BadRequestException if global role has clinicId', async () => {
-      const invalidDto = { ...createUserDto, role: 'OWNER' as const, clinicId: 'clinic-1' };
+      const invalidDto = {
+        ...createUserDto,
+        role: 'OWNER' as const,
+        clinicId: 'clinic-1',
+      };
 
       await expect(service.createUser(invalidDto)).rejects.toThrow(
         BadRequestException,
@@ -163,7 +171,11 @@ describe('AdminService', () => {
     });
 
     it('should update user with new global role successfully', async () => {
-      const globalRoleDto = { ...updateUserDto, role: 'WEBMASTER' as const, clinicId: undefined };
+      const globalRoleDto = {
+        ...updateUserDto,
+        role: 'WEBMASTER' as const,
+        clinicId: undefined,
+      };
       usersService.update.mockResolvedValue(mockUser as User);
       usersService.removeAllRoles.mockResolvedValue();
       usersService.assignGlobalRole.mockResolvedValue();
@@ -179,6 +191,7 @@ describe('AdminService', () => {
     });
 
     it('should update user without changing role if role not provided', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { role, clinicId, ...userData } = updateUserDto;
       usersService.update.mockResolvedValue(mockUser as User);
 
@@ -200,7 +213,11 @@ describe('AdminService', () => {
     });
 
     it('should throw BadRequestException if global role has clinicId', async () => {
-      const invalidDto = { ...updateUserDto, role: 'OWNER' as const, clinicId: 'clinic-1' };
+      const invalidDto = {
+        ...updateUserDto,
+        role: 'OWNER' as const,
+        clinicId: 'clinic-1',
+      };
 
       await expect(service.updateUser('user-1', invalidDto)).rejects.toThrow(
         BadRequestException,
@@ -232,15 +249,17 @@ describe('AdminService', () => {
 
   describe('findAllClinics', () => {
     it('should return all clinics', async () => {
-      const clinics = [{ 
-        id: 'clinic-1', 
-        name: 'Test Clinic',
-        city: 'Paris',
-        postcode: '75001',
-        active: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }];
+      const clinics = [
+        {
+          id: 'clinic-1',
+          name: 'Test Clinic',
+          city: 'Paris',
+          postcode: '75001',
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
       clinicsService.findAll.mockResolvedValue(clinics);
 
       const result = await service.findAllClinics();

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
-import { clinicsService } from '../../services/clinics.service';
 import type { AdminUserDto } from '../../services/admin.service';
 import type { ClinicDto } from '../../services/clinics.service';
 
@@ -118,7 +117,6 @@ export function AdminEditUser() {
     }
   };
 
-  const isGlobalRole = (role: UserRole) => role === 'OWNER' || role === 'WEBMASTER';
   const isClinicRole = (role: UserRole) => role === 'VET' || role === 'ASV' || role === 'ADMIN_CLINIC';
 
   if (loading && !user) return <p>Chargement...</p>;

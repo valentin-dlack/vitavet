@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
-import { clinicsService } from '../../services/clinics.service';
 import type { ClinicDto } from '../../services/clinics.service';
 
 type UserRole = 'OWNER' | 'VET' | 'ASV' | 'ADMIN_CLINIC' | 'WEBMASTER';

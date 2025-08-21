@@ -66,7 +66,11 @@ describe('AdminController', () => {
     });
 
     it('should create a user with global role', async () => {
-      const globalRoleDto = { ...createUserDto, role: 'OWNER' as const, clinicId: undefined };
+      const globalRoleDto = {
+        ...createUserDto,
+        role: 'OWNER' as const,
+        clinicId: undefined,
+      };
       service.createUser.mockResolvedValue(mockUser);
 
       const result = await controller.createUser(globalRoleDto);
@@ -122,8 +126,8 @@ describe('AdminController', () => {
     };
 
     it('should update a clinic successfully', async () => {
-      const mockClinic = { 
-        id: 'clinic-1', 
+      const mockClinic = {
+        id: 'clinic-1',
         name: 'Updated Clinic',
         city: 'Lyon',
         postcode: '69000',
@@ -135,7 +139,10 @@ describe('AdminController', () => {
 
       const result = await controller.updateClinic('clinic-1', updateClinicDto);
 
-      expect(service.updateClinic).toHaveBeenCalledWith('clinic-1', updateClinicDto);
+      expect(service.updateClinic).toHaveBeenCalledWith(
+        'clinic-1',
+        updateClinicDto,
+      );
       expect(result).toEqual(mockClinic);
     });
   });
@@ -154,15 +161,17 @@ describe('AdminController', () => {
 
   describe('findAllClinics', () => {
     it('should return all clinics', async () => {
-      const clinics = [{ 
-        id: 'clinic-1', 
-        name: 'Test Clinic',
-        city: 'Paris',
-        postcode: '75001',
-        active: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }];
+      const clinics = [
+        {
+          id: 'clinic-1',
+          name: 'Test Clinic',
+          city: 'Paris',
+          postcode: '75001',
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
       service.findAllClinics.mockResolvedValue(clinics);
 
       const result = await controller.findAllClinics();

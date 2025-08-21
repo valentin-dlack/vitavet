@@ -32,10 +32,7 @@ export class AdminController {
 
   @Patch('users/:id')
   @Roles('WEBMASTER')
-  updateUser(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.adminService.updateUser(id, updateUserDto);
   }
 

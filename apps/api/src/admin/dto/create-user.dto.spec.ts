@@ -113,7 +113,7 @@ describe('CreateUserDto', () => {
 
   it('should accept all valid roles', async () => {
     const validRoles = ['OWNER', 'VET', 'ASV', 'ADMIN_CLINIC', 'WEBMASTER'];
-    
+
     for (const role of validRoles) {
       const dto = new CreateUserDto();
       dto.email = 'test@example.com';
@@ -121,7 +121,10 @@ describe('CreateUserDto', () => {
       dto.lastName = 'Doe';
       dto.password = 'password123';
       dto.role = role as any;
-      dto.clinicId = role === 'OWNER' || role === 'WEBMASTER' ? undefined : '123e4567-e89b-12d3-a456-426614174000';
+      dto.clinicId =
+        role === 'OWNER' || role === 'WEBMASTER'
+          ? undefined
+          : '123e4567-e89b-12d3-a456-426614174000';
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
