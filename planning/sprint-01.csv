@@ -1,7 +1,0 @@
-Summary,Issue Type,Description,Labels,Epic Link
-"US-01a – Register","Story","As a pet owner I want to register with email/password so that I can access my space
-AC: form validation, bcrypt, confirmation mail","MVP","AUTH"
-"US-01b – Login","Story","As a pet owner I want to log in so that I manage my animals
-AC: JWT issued, redirect dashboard","MVP","AUTH"
-"US-02a – Search clinic postcode","Story","As a pet owner I want to search by postcode so that I find nearest clinic
-AC: JSON list <1s","MVP","SEARCH"

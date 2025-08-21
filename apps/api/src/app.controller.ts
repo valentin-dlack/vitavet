@@ -20,7 +20,6 @@ export class AppController {
 
   @Get('debug-sentry')
   getSentryError() {
-    // Only allow in non-production environments
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException(
         'Access to debug-sentry is forbidden in production.',

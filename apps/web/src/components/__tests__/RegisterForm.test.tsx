@@ -68,7 +68,6 @@ describe('RegisterForm', () => {
     const submitButton = screen.getByRole('button', { name: /create account/i });
     fireEvent.click(submitButton);
 
-    // For now, just check that the form doesn't submit with invalid email
     expect(mockAuthService.register).not.toHaveBeenCalled();
   });
 

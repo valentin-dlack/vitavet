@@ -1,7 +1,0 @@
-Summary,Issue Type,Description,Labels,Epic Link
-"US-09 – CI/CD Railway","Story","As DevOps I want to deploy via GitHub Actions on Railway so that each PR can be previewed
-AC: build+start commands set, PORT=3000, /api/health reachable","MVP","CI_CD"
-"US-12 – Rate limit sécurité","Story","As Security I want to rate limit 100 req/min/IP so that the API is protected
-AC: 429 on overflow, test e2e included","MVP","SECURITY"
-"US-10 – Tests – squelette","Story","As Dev I want a unit/e2e test skeleton so that regressions are caught early
-AC: Jest + Supertest for API, Vitest for web, scripts run green","MVP","CI_CD"
