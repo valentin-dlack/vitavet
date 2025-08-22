@@ -44,7 +44,9 @@ describe('ClinicsService', () => {
 
   const repoMock = {
     find: jest.fn(
-      (opts?: { where?: { postcode?: { _type: string; _value: string } } }) => {
+      (opts?: {
+        where?: { postcode?: { _type: string; _value: string } };
+      }): Promise<Clinic[]> => {
         const value = opts?.where?.postcode?._value;
         const prefix = typeof value === 'string' ? value.replace('%', '') : '';
         const result: Clinic[] = clinics.filter((c) =>
@@ -68,7 +70,9 @@ describe('ClinicsService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     save: jest.fn(),
-    create: jest.fn((d) => d),
+    create: jest.fn(
+      (d: Partial<UserClinicRole>): UserClinicRole => d as UserClinicRole,
+    ),
   } as unknown as Repository<UserClinicRole>;
 
   beforeEach(async () => {
@@ -111,7 +115,9 @@ describe('ClinicsService', () => {
     it('creates clinic with active=true', async () => {
       const createDto = { name: 'X', city: 'Y', postcode: '12345' } as any;
       (repoMock.save as any) = jest.fn().mockResolvedValue({ id: 'c1' });
-      (repoMock as any).create = jest.fn().mockImplementation((d: any) => d);
+      (repoMock as any).create = jest
+        .fn()
+        .mockImplementation((d: Partial<Clinic>): Clinic => d as Clinic);
       const res = await service.create(createDto);
       expect((repoMock as any).create).toHaveBeenCalledWith(
         expect.objectContaining({ active: true }),
@@ -174,7 +180,9 @@ describe('ClinicsService', () => {
       (ucrRepoMock.findOne as any) = jest
         .fn()
         .mockResolvedValue({ userId: 'u1', clinicId, role: 'ASV' });
-      (ucrRepoMock.save as any) = jest.fn().mockImplementation((d) => d);
+      (ucrRepoMock.save as any) = jest
+        .fn()
+        .mockImplementation((d: UserClinicRole): UserClinicRole => d);
       const res = await service.assignRole(clinicId, {
         userId: 'u1',
         role: 'VET',

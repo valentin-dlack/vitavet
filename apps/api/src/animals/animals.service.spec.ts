@@ -89,7 +89,7 @@ describe('AnimalsService', () => {
       (clinicRepo.findOne as any) = jest.fn().mockResolvedValue({ id: 'c1' });
       (repo.create as any) = jest
         .fn()
-        .mockImplementation((d: any) => ({ id: 'a1', ...d }));
+        .mockImplementation((): Animal => ({ id: 'a1' }) as unknown as Animal);
       (repo.save as any) = jest.fn().mockResolvedValue({ id: 'a1' });
       const res = await service.createAnimal(
         { clinicId: 'c1', name: 'Nina', species: 'cat' } as any,

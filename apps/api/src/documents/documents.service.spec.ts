@@ -52,7 +52,9 @@ describe('DocumentsService', () => {
 
     it('creates document when appointment exists and file provided', async () => {
       (aptRepo.findOne as any) = jest.fn().mockResolvedValue({ id: 'apt1' });
-      (docRepo.create as any) = jest.fn().mockImplementation((d: any) => d);
+      (docRepo.create as any) = jest
+        .fn()
+        .mockImplementation((d: Partial<Document>): Document => d as Document);
       (docRepo.save as any) = jest.fn().mockResolvedValue({ id: 'doc1' });
 
       const doc = await service.create('apt1', 'user1', exampleFile, 'desc');

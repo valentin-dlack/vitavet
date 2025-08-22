@@ -34,13 +34,22 @@ describe('DocumentsController', () => {
         { id: 'u1' } as any,
         'desc',
       );
-      expect(serviceMock.create).toHaveBeenCalledWith('apt1', 'u1', expect.any(Object), 'desc');
+      expect(serviceMock.create).toHaveBeenCalledWith(
+        'apt1',
+        'u1',
+        expect.any(Object),
+        'desc',
+      );
       expect(res).toEqual({ id: 'd1' });
     });
   });
 
   describe('downloadDocument', () => {
-    function createResSpy() {
+    function createResSpy(): {
+      setHeader: (k: string, v: string) => void;
+      sendFile: jest.Mock;
+      _headers: Record<string, string>;
+    } {
       const headers: Record<string, string> = {};
       return {
         setHeader: (k: string, v: string) => {
@@ -48,18 +57,27 @@ describe('DocumentsController', () => {
         },
         sendFile: jest.fn(),
         _headers: headers,
-      } as any;
+      };
     }
 
     it('404 when document not found', async () => {
       (serviceMock.findById as any) = jest.fn().mockResolvedValue(null);
       await expect(
-        controller.downloadDocument('missing', { id: 'u1' } as any, createResSpy()),
+        controller.downloadDocument(
+          'missing',
+          { id: 'u1' } as any,
+          createResSpy(),
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('403 when user has no access', async () => {
-      (serviceMock.findById as any) = jest.fn().mockResolvedValue({ id: 'd1', mimetype: 'text/plain', filename: 'f.txt', storagePath: '/tmp/f.txt' });
+      (serviceMock.findById as any) = jest.fn().mockResolvedValue({
+        id: 'd1',
+        mimetype: 'text/plain',
+        filename: 'f.txt',
+        storagePath: '/tmp/f.txt',
+      });
       (serviceMock.checkUserAccess as any) = jest.fn().mockResolvedValue(false);
       await expect(
         controller.downloadDocument('d1', { id: 'u2' } as any, createResSpy()),
@@ -67,7 +85,12 @@ describe('DocumentsController', () => {
     });
 
     it('sets headers and sends file on success', async () => {
-      (serviceMock.findById as any) = jest.fn().mockResolvedValue({ id: 'd1', mimetype: 'text/plain', filename: 'f.txt', storagePath: '/tmp/f.txt' });
+      (serviceMock.findById as any) = jest.fn().mockResolvedValue({
+        id: 'd1',
+        mimetype: 'text/plain',
+        filename: 'f.txt',
+        storagePath: '/tmp/f.txt',
+      });
       (serviceMock.checkUserAccess as any) = jest.fn().mockResolvedValue(true);
       const res = createResSpy();
       await controller.downloadDocument('d1', { id: 'u1' } as any, res);
@@ -77,5 +100,3 @@ describe('DocumentsController', () => {
     });
   });
 });
-
-

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { databaseConfig } from './database.config';
 
 describe('database.config', () => {
@@ -27,12 +28,13 @@ describe('database.config', () => {
     expect(cfg.synchronize).toBe(true);
   });
 
-  it('parses DATABASE_URL with ssl in production', async () => {
+  it('parses DATABASE_URL with ssl in production', () => {
     process.env.NODE_ENV = 'production';
     process.env.DATABASE_URL = 'postgres://user:pass@host:6543/dbname';
     // re-import to rebuild config with env
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fresh = require('./database.config') as typeof import('./database.config');
+
+    const fresh =
+      require('./database.config') as typeof import('./database.config');
     const cfg = fresh.databaseConfig;
     expect(cfg.port).toBe(6543);
     expect(cfg.username).toBe('user');
@@ -43,13 +45,13 @@ describe('database.config', () => {
     expect(cfg.synchronize).toBe(false);
   });
 
-  it('respects DB_SYNCHRONIZE override', async () => {
+  it('respects DB_SYNCHRONIZE override', () => {
     process.env.NODE_ENV = 'production';
     process.env.DB_SYNCHRONIZE = 'true';
-    const fresh = require('./database.config') as typeof import('./database.config');
+
+    const fresh =
+      require('./database.config') as typeof import('./database.config');
     const cfg = fresh.databaseConfig;
     expect(cfg.synchronize).toBe(true);
   });
 });
-
-

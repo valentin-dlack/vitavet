@@ -24,7 +24,9 @@ describe('RemindersController', () => {
   });
 
   it('planForAppointment calls service and returns planned true', async () => {
-    (serviceMock.planAppointmentReminders as any) = jest.fn().mockResolvedValue(undefined);
+    (serviceMock.planAppointmentReminders as any) = jest
+      .fn()
+      .mockResolvedValue(undefined);
     const res = await controller.planForAppointment('apt1');
     expect(serviceMock.planAppointmentReminders).toHaveBeenCalledWith('apt1');
     expect(res).toEqual({ planned: true });
@@ -42,5 +44,3 @@ describe('RemindersController', () => {
     expect(serviceMock.listInstances).toHaveBeenCalledWith('SENT');
   });
 });
-
-
