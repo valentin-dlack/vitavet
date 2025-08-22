@@ -40,6 +40,9 @@ import {
 @ApiTags('clinics')
 @ApiBearerAuth('JWT-auth')
 export class ClinicsController {
+  seedDemoData() {
+    throw new Error('Method not implemented.');
+  }
   constructor(private readonly clinicsService: ClinicsService) {}
 
   @Post()
@@ -302,34 +305,6 @@ export class ClinicsController {
         postcode: c.postcode,
       }));
     }
-  }
-
-  @Post('seed')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('WEBMASTER', 'ADMIN_CLINIC')
-  @ApiOperation({
-    summary: 'Générer des données de démonstration',
-    description:
-      'Crée des données de test pour les cliniques (développement uniquement)',
-  })
-  @ApiOkResponse({
-    description: 'Données de démonstration créées',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Demo data seeded successfully' },
-      },
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Token JWT invalide ou manquant',
-  })
-  @ApiForbiddenResponse({
-    description: 'Permissions insuffisantes',
-  })
-  async seedDemoData() {
-    await this.clinicsService.seedDemoData();
-    return { message: 'Demo data seeded successfully' };
   }
 
   @Get(':clinicId/vets')
