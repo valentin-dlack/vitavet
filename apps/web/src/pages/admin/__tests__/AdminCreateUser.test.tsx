@@ -1,12 +1,23 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import { AdminCreateUser } from './AdminCreateUser';
-import { adminService } from '../../services/admin.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@testing-library/jest-dom';
+import { AdminCreateUser } from '../AdminCreateUser';
+import { adminService } from '../../../services/admin.service';
+import React from 'react';
 
 // Mock the admin service
-vi.mock('../../services/admin.service');
-const mockedAdminService = adminService as Mocked<typeof adminService>;
+vi.mock('../../../services/admin.service', () => ({
+  adminService: {
+    getClinics: vi.fn(),
+    createUser: vi.fn(),
+    getUsers: vi.fn(),
+    updateUser: vi.fn(),
+    deleteUser: vi.fn(),
+    updateClinic: vi.fn(),
+  },
+}));
+const mockedAdminService = adminService as any;
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();

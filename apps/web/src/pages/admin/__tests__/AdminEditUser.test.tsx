@@ -1,12 +1,23 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import { AdminEditUser } from './AdminEditUser';
-import { adminService } from '../../services/admin.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@testing-library/jest-dom';
+import { AdminEditUser } from '../AdminEditUser';
+import { adminService } from '../../../services/admin.service';
+import React from 'react';
 
 // Mock the admin service
-vi.mock('../../services/admin.service');
-const mockedAdminService = adminService as Mocked<typeof adminService>;
+vi.mock('../../../services/admin.service', () => ({
+  adminService: {
+    getClinics: vi.fn(),
+    createUser: vi.fn(),
+    getUsers: vi.fn(),
+    updateUser: vi.fn(),
+    deleteUser: vi.fn(),
+    updateClinic: vi.fn(),
+  },
+}));
+const mockedAdminService = adminService as any;
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();
@@ -41,16 +52,20 @@ describe('AdminEditUser', () => {
     mockedAdminService.getClinics.mockResolvedValue(mockClinics);
   });
 
-  const renderComponent = () => {
-    return render(
-      <BrowserRouter>
-        <AdminEditUser />
-      </BrowserRouter>
-    );
+  const renderComponent = async () => {
+    let res: ReturnType<typeof render> | undefined;
+    await act(async () => {
+      res = render(
+        <BrowserRouter>
+          <AdminEditUser />
+        </BrowserRouter>
+      );
+    });
+    return res!;
   };
 
   it('should render the form with user data', async () => {
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('test@example.com')).toBeInTheDocument();
@@ -62,7 +77,7 @@ describe('AdminEditUser', () => {
   });
 
   it('should show clinic selector when clinic role is selected', async () => {
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       const roleSelect = screen.getByLabelText(/rôle/i);
@@ -73,7 +88,7 @@ describe('AdminEditUser', () => {
   });
 
   it('should hide clinic selector when global role is selected', async () => {
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       const roleSelect = screen.getByLabelText(/rôle/i);
@@ -84,7 +99,7 @@ describe('AdminEditUser', () => {
   });
 
   it('should clear clinic selection when switching to global role', async () => {
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       const roleSelect = screen.getByLabelText(/rôle/i);
@@ -105,7 +120,7 @@ describe('AdminEditUser', () => {
   it('should update user with role change successfully', async () => {
     mockedAdminService.updateUser.mockResolvedValue(mockUser);
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       // Change role to clinic role
@@ -135,7 +150,7 @@ describe('AdminEditUser', () => {
   it('should update user with global role change successfully', async () => {
     mockedAdminService.updateUser.mockResolvedValue(mockUser);
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       // Change role to global role
@@ -161,7 +176,7 @@ describe('AdminEditUser', () => {
   it('should update user without role change', async () => {
     mockedAdminService.updateUser.mockResolvedValue(mockUser);
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       // Change only email
@@ -192,7 +207,7 @@ describe('AdminEditUser', () => {
   });
 
   it('should mark clinic as required when a clinic role is selected', async () => {
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       const roleSelect = screen.getByLabelText(/rôle/i);

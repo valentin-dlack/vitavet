@@ -1,13 +1,17 @@
 import { CurrentUser } from './current-user.decorator';
 
 describe('CurrentUser decorator', () => {
-  it('is a factory function produced by createParamDecorator', () => {
+  it('is a function created by createParamDecorator', () => {
     expect(typeof CurrentUser).toBe('function');
-    // Should return a decorator function when invoked in test context
+  });
+
+  it('returns a decorator factory when called (Nest usage)', () => {
     const mockExecutionContext = {
-      switchToHttp: () => ({ getRequest: () => ({ user: {} }) }),
-    };
-    const result = CurrentUser(undefined, mockExecutionContext);
-    expect(typeof result).toBe('function');
+      switchToHttp: () => ({ getRequest: () => ({ user: { id: 'u' } }) }),
+    } as any;
+    const factory = (
+      CurrentUser as unknown as (data: unknown, ctx: any) => unknown
+    )(undefined, mockExecutionContext);
+    expect(typeof factory).toBe('function');
   });
 });

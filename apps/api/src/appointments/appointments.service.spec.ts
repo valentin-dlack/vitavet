@@ -192,6 +192,50 @@ describe('AppointmentsService', () => {
     });
   });
 
+  it('forbids OWNER booking for another owner', async () => {
+    const clinicId = 'clinic-1';
+    (animalRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+      id: 'animal-1',
+      clinicId,
+      ownerId: 'owner-A',
+    });
+    (ucrRepoMock.find as any) = jest
+      .fn()
+      .mockResolvedValue([{ userId: 'user-B', clinicId, role: 'OWNER' }]);
+    (ucrRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+      userId: 'vet-1',
+      clinicId,
+      role: 'VET',
+    });
+    (timeSlotRepoMock.findOne as any) = jest.fn().mockResolvedValue({
+      id: 'slot-1',
+      durationMinutes: 30,
+      isAvailable: true,
+    });
+    (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(null);
+
+    await expect(
+      service.createAppointment(
+        {
+          clinicId,
+          animalId: 'animal-1',
+          vetUserId: 'vet-1',
+          startsAt: new Date().toISOString(),
+        } as any,
+        'user-B',
+      ),
+    ).rejects.toThrow('You can only book for your own animals');
+  });
+
+  it('confirmAppointment rejects non-pending statuses', async () => {
+    (appointmentRepo.findOne as any) = jest
+      .fn()
+      .mockResolvedValue({ id: 'a1', status: 'CONFIRMED' });
+    await expect(service.confirmAppointment('a1')).rejects.toThrow(
+      'Appointment is not pending',
+    );
+  });
+
   describe('getPendingAppointments', () => {
     it('returns mapped pending appointments with vet, animal and owner', async () => {
       const aptA: Appointment = {
