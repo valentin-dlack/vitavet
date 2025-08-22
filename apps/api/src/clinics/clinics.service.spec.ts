@@ -44,7 +44,9 @@ describe('ClinicsService', () => {
 
   const repoMock = {
     find: jest.fn(
-      (opts?: { where?: { postcode?: { _type: string; _value: string } } }) => {
+      (opts?: {
+        where?: { postcode?: { _type: string; _value: string } };
+      }): Promise<Clinic[]> => {
         const value = opts?.where?.postcode?._value;
         const prefix = typeof value === 'string' ? value.replace('%', '') : '';
         const result: Clinic[] = clinics.filter((c) =>
@@ -54,14 +56,23 @@ describe('ClinicsService', () => {
       },
     ),
     findOne: jest.fn(),
+    preload: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
   } as unknown as Repository<Clinic>;
 
   const userRepoMock = {
     find: jest.fn(),
+    findOne: jest.fn(),
   } as unknown as Repository<User>;
 
   const ucrRepoMock = {
     find: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(
+      (d: Partial<UserClinicRole>): UserClinicRole => d as UserClinicRole,
+    ),
   } as unknown as Repository<UserClinicRole>;
 
   beforeEach(async () => {
@@ -98,6 +109,98 @@ describe('ClinicsService', () => {
     const results = await service.searchByPostcode('7500');
     expect(results).toHaveLength(2);
     expect(results.map((c) => c.id)).toEqual(['1', '2']);
+  });
+
+  describe('create/update/remove', () => {
+    it('creates clinic with active=true', async () => {
+      const createDto = { name: 'X', city: 'Y', postcode: '12345' } as any;
+      (repoMock.save as any) = jest.fn().mockResolvedValue({ id: 'c1' });
+      (repoMock as any).create = jest
+        .fn()
+        .mockImplementation((d: Partial<Clinic>): Clinic => d as Clinic);
+      const res = await service.create(createDto);
+      expect((repoMock as any).create).toHaveBeenCalledWith(
+        expect.objectContaining({ active: true }),
+      );
+      expect(repoMock.save).toHaveBeenCalled();
+      expect(res).toEqual({ id: 'c1' });
+    });
+
+    it('updates existing clinic', async () => {
+      (repoMock.preload as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'c1', name: 'New' });
+      (repoMock.save as any) = jest.fn().mockResolvedValue({ id: 'c1' });
+      const res = await service.update('c1', { name: 'New' });
+      expect(repoMock.preload).toHaveBeenCalled();
+      expect(repoMock.save).toHaveBeenCalled();
+      expect(res).toEqual({ id: 'c1' });
+    });
+
+    it('update throws when clinic not found', async () => {
+      (repoMock.preload as any) = jest.fn().mockResolvedValue(null);
+      await expect(service.update('missing', {})).rejects.toThrow();
+    });
+
+    it('remove deletes when exists', async () => {
+      (repoMock.delete as any) = jest.fn().mockResolvedValue({ affected: 1 });
+      await service.remove('c1');
+      expect(repoMock.delete).toHaveBeenCalledWith('c1');
+    });
+
+    it('remove throws when not found', async () => {
+      (repoMock.delete as any) = jest.fn().mockResolvedValue({ affected: 0 });
+      await expect(service.remove('missing')).rejects.toThrow();
+    });
+  });
+
+  describe('assignRole and getClinicRoles', () => {
+    it('assigns new role when none exists', async () => {
+      const clinicId = 'c1';
+      (repoMock.findOne as any) = jest.fn().mockResolvedValue({ id: clinicId });
+      (userRepoMock.findOne as any) = jest.fn().mockResolvedValue({ id: 'u1' });
+      (ucrRepoMock.findOne as any) = jest.fn().mockResolvedValue(null);
+      (ucrRepoMock.save as any) = jest.fn().mockResolvedValue({
+        userId: 'u1',
+        clinicId,
+        role: 'VET',
+      });
+      const res = await service.assignRole(clinicId, {
+        userId: 'u1',
+        role: 'VET',
+      } as any);
+      expect(ucrRepoMock.save).toHaveBeenCalled();
+      expect(res).toMatchObject({ clinicId, userId: 'u1', role: 'VET' });
+    });
+
+    it('updates existing assignment role', async () => {
+      const clinicId = 'c1';
+      (repoMock.findOne as any) = jest.fn().mockResolvedValue({ id: clinicId });
+      (userRepoMock.findOne as any) = jest.fn().mockResolvedValue({ id: 'u1' });
+      (ucrRepoMock.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ userId: 'u1', clinicId, role: 'ASV' });
+      (ucrRepoMock.save as any) = jest
+        .fn()
+        .mockImplementation((d: UserClinicRole): UserClinicRole => d);
+      const res = await service.assignRole(clinicId, {
+        userId: 'u1',
+        role: 'VET',
+      } as any);
+      expect(res).toMatchObject({ role: 'VET' });
+    });
+
+    it('getClinicRoles returns roles with user relation', async () => {
+      (ucrRepoMock.find as any) = jest
+        .fn()
+        .mockResolvedValue([{ userId: 'u1', clinicId: 'c1', role: 'VET' }]);
+      const res = await service.getClinicRoles('c1');
+      expect(ucrRepoMock.find).toHaveBeenCalledWith({
+        where: { clinicId: 'c1' },
+        relations: ['user'],
+      });
+      expect(res).toHaveLength(1);
+    });
   });
 
   it('searchByPostcode with services OR filter returns subset', async () => {

@@ -5,12 +5,11 @@ import { RegisterForm } from '../components/RegisterForm';
 export function Register() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleSuccess = (successMessage: string) => {
-    setMessage({ type: 'success', text: successMessage });
-    // Redirect home after successful registration
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
+  const handleSuccess = () => {
+    // Redirect to login with success message
+    const params = new URLSearchParams();
+    params.set('message', 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.');
+    window.location.href = `/login?${params.toString()}`;
   };
 
   const handleError = (errorMessage: string) => {

@@ -29,19 +29,30 @@ describe('AdminService', () => {
         createdAt: '2024-01-01T00:00:00Z',
       };
 
+      // Add the required 'role' property to the payload to match CreateUserPayload type
+      const createUserPayloadWithRole = {
+        ...createUserPayload,
+        role: 'ASV',
+      };
+
       mockedHttpService.post.mockResolvedValue(mockUser);
 
-      const result = await adminService.createUser(createUserPayload);
+      const result = await adminService.createUser(createUserPayloadWithRole);
 
-      expect(mockedHttpService.post).toHaveBeenCalledWith('/admin/users', createUserPayload);
+      expect(mockedHttpService.post).toHaveBeenCalledWith('/admin/users', createUserPayloadWithRole);
       expect(result).toEqual(mockUser);
     });
-
     it('should handle errors', async () => {
       const error = new Error('Failed to create user');
+      // Add the required 'role' property to the payload to match CreateUserPayload type
+      const createUserPayloadWithRole = {
+        ...createUserPayload,
+        role: 'ASV',
+      };
+
       mockedHttpService.post.mockRejectedValue(error);
 
-      await expect(adminService.createUser(createUserPayload)).rejects.toThrow('Failed to create user');
+      await expect(adminService.createUser(createUserPayloadWithRole)).rejects.toThrow('Failed to create user');
     });
   });
 

@@ -64,12 +64,6 @@ describe('ClinicsController', () => {
     ]);
   });
 
-  it('should seed demo data', async () => {
-    const res = await controller.seedDemoData();
-    expect(service.seedDemoData).toHaveBeenCalled();
-    expect(res).toEqual({ message: 'Demo data seeded successfully' });
-  });
-
   it('should list all clinics when no postcode is provided', async () => {
     const res = await controller.search(undefined as any);
     expect(res).toEqual([

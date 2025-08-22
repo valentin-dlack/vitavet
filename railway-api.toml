@@ -7,6 +7,7 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+preDeployCommand = "pnpm --filter api build && SEED_ON_DEPLOY=true DB_SYNCHRONIZE=true pnpm --filter api seed:prod"
 
 [deploy.envs]
 NODE_ENV = "production"

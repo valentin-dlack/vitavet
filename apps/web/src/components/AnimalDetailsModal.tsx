@@ -104,7 +104,6 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 			document.body.removeChild(link);
 			window.URL.revokeObjectURL(url);
 		} catch (e) {
-			// eslint-disable-next-line no-alert
 			alert('Erreur lors du téléchargement du document');
 			console.error(e);
 		}

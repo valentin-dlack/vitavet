@@ -46,7 +46,11 @@ export const databaseConfig: TypeOrmModuleOptions = {
   password: db.password,
   database: db.database,
   entities: [User, NotificationLog],
-  synchronize: process.env.NODE_ENV !== 'production', // Auto-create tables in development
+  // Allow override via env for staging: set DB_SYNCHRONIZE=true on Railway staging
+  synchronize:
+    process.env.DB_SYNCHRONIZE !== undefined
+      ? process.env.DB_SYNCHRONIZE === 'true'
+      : process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
   ssl: db.ssl,
 };

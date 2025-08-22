@@ -8,4 +8,4 @@ cmds = ["pnpm install --frozen-lockfile"]
 cmds = ["pnpm build"]
 
 [start]
-cmd = "pnpm start:prod"
+cmd = "pnpm --filter api start:prod"

@@ -1,7 +1,7 @@
 import { authService } from './auth.service';
 
 class HttpService {
-  private baseUrl = (import.meta as unknown as ImportMeta)?.env?.VITE_API_BASE_URL || '/api';
+  private baseUrl = '/api';
 
   private async request<T>(
     endpoint: string,
@@ -36,8 +36,23 @@ class HttpService {
         throw new Error('Authentication required');
       }
 
-      const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      let message: string | undefined;
+      try {
+        const data = await response.clone().json();
+        const possiblyMessage = (data as { message?: string; error?: string; errorMessage?: string })
+          .message ?? (data as { message?: string; error?: string; errorMessage?: string }).error ??
+          (data as { message?: string; error?: string; errorMessage?: string }).errorMessage;
+        message = possiblyMessage ?? undefined;
+      } catch {
+        try {
+          const text = await response.text();
+          message = text || undefined;
+        } catch {
+          // Ignore parsing errors and fall back
+        }
+      }
+
+      throw new Error(message ?? `HTTP error! status: ${response.status}`);
     }
 
     // Handle 204 No Content responses

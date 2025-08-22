@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { httpService } from '../services/http.service';
 
 interface HealthStatus {
   status: string;
@@ -15,11 +16,7 @@ export function HealthCheck() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch('/api/health');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await httpService.get<HealthStatus>('/health');
         setHealth(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
