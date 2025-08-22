@@ -54,12 +54,58 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api'); // => /api/*
 
-  // Swagger (OpenAPI) minimal setup for docs on /api/docs
+  // Swagger (OpenAPI) setup for docs on /api/docs
   const swaggerConfig = new DocumentBuilder()
     .setTitle('VitaVet API')
-    .setDescription('API documentation for VitaVet')
+    .setDescription(
+      `# VitaVet API Documentation
+
+API REST pour la gestion de cliniques vétérinaires et de rendez-vous.
+
+## Authentification
+L'API utilise l'authentification JWT Bearer Token. Incluez le token dans l'en-tête Authorization :
+\`\`\`
+Authorization: Bearer <your-jwt-token>
+\`\`\`
+
+## Rôles utilisateur
+- **OWNER** : Propriétaire d'animaux
+- **VET** : Vétérinaire
+- **ASV** : Assistant vétérinaire
+- **ADMIN_CLINIC** : Administrateur de clinique
+- **WEBMASTER** : Administrateur système
+
+## Codes de statut
+- 200 : Succès
+- 201 : Créé
+- 204 : Pas de contenu
+- 400 : Requête invalide
+- 401 : Non authentifié
+- 403 : Non autorisé
+- 404 : Non trouvé
+- 500 : Erreur serveur`,
+    )
     .setVersion('1.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'JWT token obtenu via /auth/login',
+      },
+      'JWT-auth',
+    )
+    .addTag('auth', 'Authentification et gestion de profil utilisateur')
+    .addTag('clinics', 'Gestion des cliniques vétérinaires')
+    .addTag('appointments', 'Gestion des rendez-vous')
+    .addTag('animals', 'Gestion des animaux')
+    .addTag('slots', 'Gestion des créneaux disponibles')
+    .addTag('agenda', 'Agenda des vétérinaires')
+    .addTag('documents', 'Gestion des documents')
+    .addTag('reminders', 'Gestion des rappels')
+    .addTag('notifications', 'Gestion des notifications')
+    .addTag('admin', 'Administration système')
+    .addTag('health', "Santé de l'API")
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument);

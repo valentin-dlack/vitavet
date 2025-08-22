@@ -30,14 +30,10 @@ describe('Throttler (e2e)', () => {
     // Faire 5 requêtes (bien en dessous de la limite de 100)
     for (let i = 0; i < 5; i++) {
       const response = await request(app.getHttpServer())
-        .get('/api/test')
+        .get('/api/')
         .expect(200);
 
-      expect(response.body).toHaveProperty(
-        'message',
-        'Test endpoint for rate limiting',
-      );
-      expect(response.body).toHaveProperty('timestamp');
+      expect(response.text).toBe('Hello World!');
     }
   });
 
@@ -48,7 +44,7 @@ describe('Throttler (e2e)', () => {
     // Faire 110 requêtes séquentielles
     for (let i = 0; i < 110; i++) {
       try {
-        const response = await request(app.getHttpServer()).get('/api/test');
+        const response = await request(app.getHttpServer()).get('/api/');
 
         if (response.status === 429) {
           blockedRequest = response;
@@ -80,7 +76,7 @@ describe('Throttler (e2e)', () => {
     // IP1 fait 50 requêtes
     for (let i = 0; i < 50; i++) {
       await request(app.getHttpServer())
-        .get('/api/test')
+        .get('/api/')
         .set('X-Forwarded-For', ip1)
         .expect(200);
     }
@@ -88,7 +84,7 @@ describe('Throttler (e2e)', () => {
     // IP2 fait 50 requêtes (devrait aussi réussir)
     for (let i = 0; i < 50; i++) {
       await request(app.getHttpServer())
-        .get('/api/test')
+        .get('/api/')
         .set('X-Forwarded-For', ip2)
         .expect(200);
     }
@@ -98,7 +94,7 @@ describe('Throttler (e2e)', () => {
     for (let i = 0; i < 60; i++) {
       try {
         const response = await request(app.getHttpServer())
-          .get('/api/test')
+          .get('/api/')
           .set('X-Forwarded-For', ip1);
 
         if (response.status === 429) {

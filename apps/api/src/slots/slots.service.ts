@@ -99,6 +99,8 @@ export class SlotsService {
       }));
   }
 
+  // NOTE: Cette méthode est UNIQUEMENT pour les tests E2E
+  // Elle ne doit PAS être exposée via un endpoint public
   async seedDemoSlots(clinicId: string, vetId: string): Promise<void> {
     // Seed simple grid of slots for demo clinic and vets
     const today = new Date();

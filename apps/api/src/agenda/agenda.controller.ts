@@ -5,14 +5,77 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { User } from '../users/entities/user.entity';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiQuery,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiOkResponse,
+  ApiForbiddenResponse,
+} from '@nestjs/swagger';
 
 @Controller('agenda')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiTags('agenda')
+@ApiBearerAuth('JWT-auth')
 export class AgendaController {
   constructor(private readonly agendaService: AgendaService) {}
 
   @Get('me')
   @Roles('VET')
+  @ApiOperation({
+    summary: 'Obtenir mon agenda',
+    description:
+      "Récupère l'agenda du vétérinaire connecté pour une période donnée (VET uniquement)",
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description:
+      "Date de référence (format: YYYY-MM-DD). Par défaut: aujourd'hui",
+    type: 'string',
+    example: '2024-01-15',
+  })
+  @ApiQuery({
+    name: 'range',
+    required: false,
+    description: 'Période à récupérer',
+    enum: ['day', 'week', 'month'],
+    example: 'day',
+  })
+  @ApiOkResponse({
+    description: 'Agenda du vétérinaire',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string', enum: ['APPOINTMENT', 'BLOCK'] },
+          startsAt: { type: 'string', format: 'date-time' },
+          endsAt: { type: 'string', format: 'date-time' },
+          title: { type: 'string' },
+          description: { type: 'string', nullable: true },
+          animalName: { type: 'string', nullable: true },
+          ownerName: { type: 'string', nullable: true },
+          clinicId: { type: 'string' },
+          clinicName: { type: 'string' },
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT invalide ou manquant',
+  })
+  @ApiForbiddenResponse({
+    description: 'Permissions insuffisantes (VET requis)',
+  })
+  @ApiBadRequestResponse({
+    description: 'Date ou période invalide',
+  })
   async getMyAgenda(
     @CurrentUser() user: User,
     @Query('date') date: string,
@@ -56,6 +119,60 @@ export class AgendaController {
 
   @Post('block')
   @Roles('VET')
+  @ApiOperation({
+    summary: 'Bloquer des créneaux',
+    description:
+      "Bloque des créneaux dans l'agenda du vétérinaire (VET uniquement)",
+  })
+  @ApiBody({
+    description: 'Informations du blocage de créneaux',
+    schema: {
+      type: 'object',
+      required: ['clinicId', 'startsAt', 'endsAt'],
+      properties: {
+        clinicId: {
+          type: 'string',
+          description: 'ID de la clinique',
+        },
+        startsAt: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Date et heure de début du blocage',
+        },
+        endsAt: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Date et heure de fin du blocage',
+        },
+        reason: {
+          type: 'string',
+          description: 'Raison du blocage (optionnel)',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Créneaux bloqués avec succès',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        startsAt: { type: 'string', format: 'date-time' },
+        endsAt: { type: 'string', format: 'date-time' },
+        reason: { type: 'string', nullable: true },
+        message: { type: 'string', example: 'Slots blocked successfully' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Données de blocage invalides',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT invalide ou manquant',
+  })
+  @ApiForbiddenResponse({
+    description: 'Permissions insuffisantes (VET requis)',
+  })
   async block(
     @CurrentUser() user: User,
     @Body()

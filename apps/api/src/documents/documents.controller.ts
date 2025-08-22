@@ -21,9 +21,25 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { DocumentsService } from './documents.service';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiParam,
+  ApiConsumes,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiTags('documents')
+@ApiBearerAuth('JWT-auth')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
@@ -46,6 +62,65 @@ export class DocumentsController {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     }),
   )
+  @ApiOperation({
+    summary: 'Télécharger un document pour un rendez-vous',
+    description:
+      'Télécharge un document (radiographie, analyse, etc.) associé à un rendez-vous (VET uniquement)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({
+    name: 'appointmentId',
+    description: 'ID du rendez-vous',
+    type: 'string',
+  })
+  @ApiBody({
+    description: 'Fichier à télécharger',
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Fichier à télécharger (max 10MB)',
+        },
+        description: {
+          type: 'string',
+          description: 'Description du document (optionnel)',
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Document téléchargé avec succès',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        filename: { type: 'string' },
+        originalName: { type: 'string' },
+        mimetype: { type: 'string' },
+        size: { type: 'number' },
+        description: { type: 'string', nullable: true },
+        appointmentId: { type: 'string' },
+        uploadedBy: { type: 'string' },
+        uploadedAt: { type: 'string', format: 'date-time' },
+        message: { type: 'string', example: 'Document uploaded successfully' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Fichier invalide ou trop volumineux',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT invalide ou manquant',
+  })
+  @ApiForbiddenResponse({
+    description: 'Permissions insuffisantes (VET requis)',
+  })
+  @ApiNotFoundResponse({
+    description: 'Rendez-vous non trouvé',
+  })
   uploadFile(
     @Param('appointmentId') appointmentId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -61,6 +136,32 @@ export class DocumentsController {
   }
 
   @Get('download/:documentId')
+  @ApiOperation({
+    summary: 'Télécharger un document',
+    description:
+      'Télécharge un document spécifique (accès contrôlé selon les permissions)',
+  })
+  @ApiParam({
+    name: 'documentId',
+    description: 'ID du document à télécharger',
+    type: 'string',
+  })
+  @ApiOkResponse({
+    description: 'Fichier téléchargé',
+    schema: {
+      type: 'string',
+      format: 'binary',
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token JWT invalide ou manquant',
+  })
+  @ApiForbiddenResponse({
+    description: 'Accès refusé au document',
+  })
+  @ApiNotFoundResponse({
+    description: 'Document non trouvé',
+  })
   async downloadDocument(
     @Param('documentId') documentId: string,
     @CurrentUser() user: User,
