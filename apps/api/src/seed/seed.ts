@@ -11,6 +11,7 @@ import { AppointmentType } from '../appointments/entities/appointment-type.entit
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
 import { ReminderInstance } from '../reminders/entities/reminder-instance.entity';
+import { TimeSlot } from '../slots/entities/time-slot.entity';
 
 async function bootstrap() {
   // Only allow running in production when explicitly requested (e.g., staging)
@@ -38,6 +39,7 @@ async function bootstrap() {
     const aptRepo = dataSource.getRepository(Appointment);
     const ruleRepo = dataSource.getRepository(ReminderRule);
     const instanceRepo = dataSource.getRepository(ReminderInstance);
+    const timeSlotRepo = dataSource.getRepository(TimeSlot);
 
     // Create users
     const owner = await usersService
@@ -170,6 +172,79 @@ async function bootstrap() {
       );
     }
 
+    // Create realistic time slots for the next 14 days
+    console.log('Creating time slots...');
+    const veterinarians = [vet1, vet2];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Generate slots for the next 14 days
+    for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+      const currentDay = new Date(today);
+      currentDay.setDate(today.getDate() + dayOffset);
+
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      const dayOfWeek = currentDay.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+      for (const vet of veterinarians) {
+        // Generate 3-4 random slots per day per vet, between 9h and 19h
+        const numSlots = Math.floor(Math.random() * 2) + 3; // 3 or 4 slots
+        const usedHours = new Set<number>();
+
+        for (let slotIndex = 0; slotIndex < numSlots; slotIndex++) {
+          // Random hour between 9 and 18 (so slots end before 19h)
+          let randomHour: number;
+          do {
+            randomHour = Math.floor(Math.random() * 10) + 9; // 9 to 18
+          } while (usedHours.has(randomHour));
+
+          usedHours.add(randomHour);
+
+          // Random minute: 0 or 30
+          const randomMinute = Math.random() < 0.5 ? 0 : 30;
+
+          const slotStart = new Date(currentDay);
+          slotStart.setHours(randomHour, randomMinute, 0, 0);
+
+          const slotEnd = new Date(slotStart);
+          slotEnd.setMinutes(slotStart.getMinutes() + 30); // 30 min slots
+
+          // Check if slot already exists
+          const existingSlot = await timeSlotRepo.findOne({
+            where: {
+              clinicId: clinic.id,
+              vetUserId: vet.id,
+              startsAt: slotStart,
+            },
+          });
+
+          if (!existingSlot) {
+            // Check if there's already an appointment at this time
+            const conflictingApt = await aptRepo.findOne({
+              where: {
+                vetUserId: vet.id,
+                startsAt: slotStart,
+              },
+            });
+
+            await timeSlotRepo.save(
+              timeSlotRepo.create({
+                clinicId: clinic.id,
+                vetUserId: vet.id,
+                startsAt: slotStart,
+                endsAt: slotEnd,
+                isAvailable: !conflictingApt, // Not available if appointment exists
+                durationMinutes: 30,
+              }),
+            );
+          }
+        }
+      }
+    }
+
+    console.log('Time slots created successfully!');
+
     // Reminder rule
     let rule = await ruleRepo.findOne({
       where: { scope: 'APPOINTMENT' },
@@ -298,13 +373,21 @@ async function bootstrap() {
 
     // Output helpful demo credentials
 
-    console.log('\nSeed complete. Demo accounts:');
-    console.log('OWNER  : owner@example.com / password123');
-    console.log('VET #1 : vet1@example.com  / password123');
-    console.log('VET #2 : vet2@example.com  / password123');
-    console.log('ASV    : asv@example.com   / password123');
-    console.log('ADMIN  : admin@example.com / password123\n');
-    console.log('WEBMASTER: webmaster@example.com / password123');
+    console.log('\n✅ Seed complete. Demo accounts:');
+    console.log('OWNER     : owner@example.com / password123');
+    console.log('VET #1    : vet1@example.com  / password123');
+    console.log('VET #2    : vet2@example.com  / password123');
+    console.log('ASV       : asv@example.com   / password123');
+    console.log('ADMIN     : admin@example.com / password123');
+    console.log('WEBMASTER : webmaster@example.com / password123\n');
+
+    console.log('📅 Time slots created for the next 14 days (weekdays only)');
+    console.log('   - 3-4 slots per day per vet');
+    console.log('   - Between 9h and 19h');
+    console.log('   - 30min duration each');
+    console.log(
+      '   - Automatically marked unavailable if appointment exists\n',
+    );
   } finally {
     await app.close();
   }
