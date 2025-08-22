@@ -5,8 +5,15 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { AccountDeletionRequest } from './entities/account-deletion-request.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -22,6 +29,8 @@ describe('AuthService', () => {
     findRolesAndClinics: jest
       .fn()
       .mockResolvedValue({ roles: [], clinicIds: [] }),
+    update: jest.fn(),
+    updatePassword: jest.fn(),
   };
 
   const mockJwtService = {
@@ -266,6 +275,164 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('throws when user not found', async () => {
+      mockUsersService.findById.mockResolvedValue(null);
+      await expect(
+        service.updateProfile('uid', { firstName: 'A' } as UpdateProfileDto),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws when email already used by another user', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid', email: 'a@a' });
+      mockUsersService.findByEmail.mockResolvedValue({ id: 'other' });
+      await expect(
+        service.updateProfile('uid', { email: 'b@b' } as UpdateProfileDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('updates profile successfully', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid', email: 'a@a' });
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.update = jest
+        .fn()
+        .mockResolvedValue({ id: 'uid', email: 'b@b', firstName: 'B' });
+      const res = await service.updateProfile('uid', {
+        email: 'b@b',
+        firstName: 'B',
+      } as UpdateProfileDto);
+      expect(res).toMatchObject({ email: 'b@b', firstName: 'B' });
+    });
+  });
+
+  describe('changePassword', () => {
+    it('throws when user not found', async () => {
+      mockUsersService.findById.mockResolvedValue(null);
+      await expect(
+        service.changePassword('uid', {
+          currentPassword: 'x',
+          newPassword: 'y',
+          confirmPassword: 'y',
+        } as ChangePasswordDto),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws when current password invalid', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(false);
+      await expect(
+        service.changePassword('uid', {
+          currentPassword: 'bad',
+          newPassword: 'y',
+          confirmPassword: 'y',
+        } as ChangePasswordDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when new and confirm mismatch', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(true);
+      await expect(
+        service.changePassword('uid', {
+          currentPassword: 'ok',
+          newPassword: 'y',
+          confirmPassword: 'z',
+        } as ChangePasswordDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('changes password successfully', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(true);
+      mockUsersService.updatePassword = jest.fn().mockResolvedValue(undefined);
+      const res = await service.changePassword('uid', {
+        currentPassword: 'ok',
+        newPassword: 'y',
+        confirmPassword: 'y',
+      } as ChangePasswordDto);
+      expect(mockUsersService.updatePassword).toHaveBeenCalled();
+      expect(res).toEqual({ message: 'Mot de passe modifié avec succès' });
+    });
+  });
+
+  describe('requestAccountDeletion & getDeletionRequestStatus', () => {
+    it('throws when user not found', async () => {
+      mockUsersService.findById.mockResolvedValue(null);
+      await expect(
+        service.requestAccountDeletion('uid', {
+          password: 'p',
+          reason: 'r',
+        } as DeleteAccountDto),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws when password invalid', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(false);
+      await expect(
+        service.requestAccountDeletion('uid', {
+          password: 'bad',
+          reason: 'r',
+        } as DeleteAccountDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when pending request already exists', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(true);
+      (mockDeletionRequestRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'existing' });
+      await expect(
+        service.requestAccountDeletion('uid', {
+          password: 'ok',
+          reason: 'r',
+        } as DeleteAccountDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('creates deletion request when no pending', async () => {
+      mockUsersService.findById.mockResolvedValue({ id: 'uid' });
+      mockUsersService.validatePassword.mockResolvedValue(true);
+      (mockDeletionRequestRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue(null);
+      (mockDeletionRequestRepo.create as any) = jest
+        .fn()
+        .mockImplementation(
+          (d: any) => ({ id: 'new', ...d }) as AccountDeletionRequest,
+        );
+      (mockDeletionRequestRepo.save as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'new' });
+      const res = await service.requestAccountDeletion('uid', {
+        password: 'ok',
+        reason: 'r',
+      } as DeleteAccountDto);
+      expect(mockDeletionRequestRepo.create).toHaveBeenCalled();
+      expect(mockDeletionRequestRepo.save).toHaveBeenCalled();
+      expect(res).toHaveProperty('requestId', 'new');
+    });
+
+    it('getDeletionRequestStatus returns latest or null', async () => {
+      (mockDeletionRequestRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 'r1',
+          status: 'PENDING',
+          reason: 'x',
+          createdAt: new Date(),
+          adminNotes: null,
+          processedAt: null,
+        });
+      const empty = await service.getDeletionRequestStatus('uid');
+      expect(empty).toBeNull();
+      const nonEmpty = await service.getDeletionRequestStatus('uid');
+      expect(nonEmpty).toHaveProperty('id', 'r1');
     });
   });
 });

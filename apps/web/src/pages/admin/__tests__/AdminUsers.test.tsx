@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminUsers } from '../AdminUsers';
 import { adminService } from '../../../services/admin.service';
+import React from 'react';
 
 // Mock the admin service
 vi.mock('../../../services/admin.service');
