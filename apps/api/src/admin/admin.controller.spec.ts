@@ -113,9 +113,11 @@ describe('AdminController', () => {
     it('should remove a user successfully', async () => {
       service.removeUser.mockResolvedValue();
 
-      await controller.removeUser('user-1');
+      // pass a mock request with a user id (webmaster) different from target
+      const mockReq = { user: { id: 'admin-1' } } as any;
+      await controller.removeUser('user-1', mockReq);
 
-      expect(service.removeUser).toHaveBeenCalledWith('user-1');
+      expect(service.removeUser).toHaveBeenCalledWith('admin-1', 'user-1');
     });
   });
 
