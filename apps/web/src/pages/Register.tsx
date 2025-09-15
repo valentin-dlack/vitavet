@@ -20,10 +20,10 @@ export function Register() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h1 className="text-center text-3xl font-extrabold text-gray-900">
-          Create your account
+          Créez votre compte
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Join VetaVet to manage your pets' health
+          Joignez-vous à VitaVet pour gérer la santé de vos animaux
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export function Register() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+                <span className="px-2 bg-white text-gray-500">Vous avez déjà un compte ?</span>
               </div>
             </div>
 
@@ -59,7 +59,7 @@ export function Register() {
                  to="/login"
                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                >
-                 Sign in instead
+                 Connectez-vous
                </Link>
              </div>
           </div>

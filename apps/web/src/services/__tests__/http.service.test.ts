@@ -73,7 +73,7 @@ describe('http.service', () => {
       status: 401,
       text: async () => 'unauthorized',
     } as Response);
-    await expect(httpService.get('/secure')).rejects.toThrow('Authentication required');
+    await expect(httpService.get('/secure')).rejects.toThrow('Authentification requise');
     expect(logoutSpy).toHaveBeenCalled();
     expect(window.location.href).toBe('/login');
   });

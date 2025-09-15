@@ -22,32 +22,32 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
 
     // Email validation
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'L\'email est requis';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Veuillez saisir une adresse email valide';
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Le mot de passe est requis';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
     } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+      newErrors.password = 'Doit contenir min. une majuscule, une minuscule, un chiffre et un caractère spécial';
     }
 
     // First name validation
     if (!formData.firstName) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = 'Le prénom est requis';
     } else if (formData.firstName.length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters long';
+      newErrors.firstName = 'Le prénom doit contenir au moins 2 caractères';
     }
 
     // Last name validation
     if (!formData.lastName) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = 'Le nom est requis';
     } else if (formData.lastName.length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters long';
+      newErrors.lastName = 'Le nom doit contenir au moins 2 caractères';
     }
 
     setErrors(newErrors);
@@ -66,7 +66,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
       const response = await authService.register(formData);
       onSuccess(response.message);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Registration failed');
+      onError(error instanceof Error ? error.message : 'Échec de l\'inscription');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4" data-testid="register-form">
       <div>
         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-          First Name *
+          Prénom *
         </label>
         <input
           type="text"
@@ -108,7 +108,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
 
       <div>
         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-          Last Name *
+          Nom *
         </label>
         <input
           type="text"
@@ -154,7 +154,7 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
 
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password *
+          Mot de passe *
         </label>
         <input
           type="password"
@@ -181,12 +181,12 @@ export function RegisterForm({ onSuccess, onError }: RegisterFormProps) {
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-describedby={loading ? 'loading-message' : undefined}
       >
-        {loading ? 'Creating account...' : 'Create Account'}
+        {loading ? 'Création du compte...' : 'Créer un compte'}
       </button>
       
       {loading && (
         <p id="loading-message" className="text-sm text-gray-600 text-center">
-          Please wait while we create your account...
+          Merci de patienter pendant la création de votre compte...
         </p>
       )}
     </form>

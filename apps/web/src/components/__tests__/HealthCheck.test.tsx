@@ -1,69 +1,47 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HealthCheck } from '../HealthCheck';
 
-// Mock fetch
-global.fetch = vi.fn();
+vi.mock('../../services/http.service', () => ({
+  httpService: {
+    get: vi.fn(),
+  },
+}));
+
+import { httpService } from '../../services/http.service';
 
 describe('HealthCheck', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should show loading state initially', () => {
-    (fetch as any).mockImplementation(() => new Promise(() => {})); // Never resolves
-    render(<HealthCheck />);
-    expect(screen.getByTestId('health-loading')).toBeInTheDocument();
-  });
-
-  it('should show health status when API call succeeds', async () => {
+  it('logs health to console on success', async () => {
     const mockHealthData = {
       status: 'ok',
       timestamp: '2024-01-01T00:00:00.000Z',
       uptime: 123.456,
-      environment: 'test'
+      environment: 'test',
     };
-
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockHealthData,
-    });
+    (httpService.get as any).mockResolvedValueOnce(mockHealthData);
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
     render(<HealthCheck />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('health-status')).toBeInTheDocument();
+      expect(infoSpy).toHaveBeenCalledWith('[VitaVet] API health', mockHealthData);
     });
-
-    expect(screen.getByText('API Health Status')).toBeInTheDocument();
-    expect(screen.getByText('Status: ok')).toBeInTheDocument();
-    expect(screen.getByText('Environment: test')).toBeInTheDocument();
   });
 
-  it('should show error when API call fails', async () => {
-    (fetch as any).mockRejectedValueOnce(new Error('Network error'));
+  it('logs error to console on failure', async () => {
+    (httpService.get as any).mockRejectedValueOnce(new Error('Network error'));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     render(<HealthCheck />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('health-error')).toBeInTheDocument();
+      expect(warnSpy).toHaveBeenCalled();
+      const firstArg = (warnSpy.mock.calls[0] || [])[1];
+      expect(String(firstArg)).toContain('Network error');
     });
-
-    expect(screen.getByText('Error: Network error')).toBeInTheDocument();
-  });
-
-  it('should show error when API returns non-ok status', async () => {
-    (fetch as any).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-    });
-
-    render(<HealthCheck />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('health-error')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Error: HTTP error! status: 500')).toBeInTheDocument();
   });
 });

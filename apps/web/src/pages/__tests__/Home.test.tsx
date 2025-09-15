@@ -1,42 +1,41 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Home } from '../Home';
-import { authService } from '../../services/auth.service';
 import React from 'react';
 import { vi, describe, it, expect } from 'vitest';
 
-vi.mock('../../services/auth.service', () => ({
-  authService: {
-    isAuthenticated: vi.fn().mockReturnValue(false),
-    getUser: vi.fn().mockReturnValue(null),
-    logout: vi.fn(),
-  },
+const mockAuthState = { user: null as any, isAuthenticated: false, roles: [] as string[] };
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => mockAuthState,
 }));
 
 describe('Home page', () => {
   it('renders navigation for anonymous users', () => {
+    mockAuthState.user = null;
+    mockAuthState.isAuthenticated = false;
+    mockAuthState.roles = [];
+
     render(
       <MemoryRouter>
         <Home />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/VitaVet/i)).toBeInTheDocument();
-    expect(screen.getByText(/Créer un compte/i)).toBeInTheDocument();
-    expect(screen.getByText(/Se connecter/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rechercher une clinique/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Simplifiez la gestion/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Commencer gratuitement/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Trouver une clinique/i })).toBeInTheDocument();
   });
 
-  it('shows welcome and allows logout when authenticated', () => {
-    (authService.isAuthenticated as any).mockReturnValue(true);
-    (authService.getUser as any).mockReturnValue({ firstName: 'A', lastName: 'B' });
+  it('shows panel CTA when authenticated', () => {
+    mockAuthState.user = { firstName: 'A', lastName: 'B' } as any;
+    mockAuthState.isAuthenticated = true;
+
     render(
       <MemoryRouter>
         <Home />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId('welcome-message')).toHaveTextContent('Bienvenue, A B');
-    fireEvent.click(screen.getByRole('button', { name: /Se déconnecter/i }));
-    expect(authService.logout).toHaveBeenCalled();
+
+    expect(screen.getByRole('link', { name: /Ouvrir le panel/i })).toBeInTheDocument();
   });
 });
 

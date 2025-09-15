@@ -35,7 +35,7 @@ describe('slots.service', () => {
     vi.spyOn(global, 'fetch' as any).mockResolvedValue({ ok: false } as Response);
     await expect(
       slotsService.getAvailableSlots({ clinicId: 'c1', date: '2024-01-10' }),
-    ).rejects.toThrow('Failed to fetch slots');
+    ).rejects.toThrow('Échec du chargement des créneaux');
   });
 });
 

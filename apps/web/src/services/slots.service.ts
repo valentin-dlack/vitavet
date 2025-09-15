@@ -22,7 +22,7 @@ class SlotsService {
 		if (params.vetUserId) url.searchParams.set('vetUserId', params.vetUserId);
 
 		const res = await fetch(url.toString());
-		if (!res.ok) throw new Error('Failed to fetch slots');
+		if (!res.ok) throw new Error('Échec du chargement des créneaux');
 		return res.json();
 	}
 }
