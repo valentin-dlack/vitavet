@@ -41,42 +41,7 @@ async function bootstrap() {
     const instanceRepo = dataSource.getRepository(ReminderInstance);
     const timeSlotRepo = dataSource.getRepository(TimeSlot);
 
-    // Create users
-    const owner = await usersService
-      .create('owner@example.com', 'password123', 'Olivia', 'Owner')
-      .catch(
-        async () => (await usersService.findByEmail('owner@example.com'))!,
-      );
-    // Ensure explicit global role OWNER
-    await usersService.assignGlobalRole(owner.id, 'OWNER');
-
-    const vet1 = await usersService
-      .create('vet1@example.com', 'password123', 'Victor', 'Vet')
-      .catch(async () => (await usersService.findByEmail('vet1@example.com'))!);
-
-    const vet2 = await usersService
-      .create('vet2@example.com', 'password123', 'Vanessa', 'Vet')
-      .catch(async () => (await usersService.findByEmail('vet2@example.com'))!);
-
-    const asv = await usersService
-      .create('asv@example.com', 'password123', 'Aline', 'ASV')
-      .catch(async () => (await usersService.findByEmail('asv@example.com'))!);
-
-    const adminClinic = await usersService
-      .create('admin@example.com', 'password123', 'Alex', 'Admin')
-      .catch(
-        async () => (await usersService.findByEmail('admin@example.com'))!,
-      );
-
-    const webmaster = await usersService
-      .create('webmaster@example.com', 'password123', 'Webmaster', 'Webmaster')
-      .catch(
-        async () => (await usersService.findByEmail('webmaster@example.com'))!,
-      );
-    // Ensure webmaster has global WEBMASTER role (not clinic-bound)
-    await usersService.assignGlobalRole(webmaster.id, 'WEBMASTER');
-
-    // Create clinic
+    // Create or find clinic first so we can attach clinic roles immediately
     let clinic = await clinicRepo.findOne({
       where: { name: 'Clinique VitaVet' },
     });
@@ -90,7 +55,77 @@ async function bootstrap() {
       );
     }
 
-    // Roles
+    // Create users
+    const owner = await usersService
+      .create('owner@example.com', 'password123', 'Olivia', 'Owner')
+      .catch(
+        async () => (await usersService.findByEmail('owner@example.com'))!,
+      );
+    // Ensure explicit global role OWNER
+    await usersService.assignGlobalRole(owner.id, 'OWNER');
+
+    const webmaster = await usersService
+      .create(
+        'webmaster@example.com',
+        'password123',
+        'Webmaster',
+        'Webmaster',
+        'WEBMASTER',
+      )
+      .catch(
+        async () => (await usersService.findByEmail('webmaster@example.com'))!,
+      );
+    // Ensure webmaster has global WEBMASTER role (not clinic-bound)
+    await usersService.assignGlobalRole(webmaster.id, 'WEBMASTER');
+
+    // Staff users with explicit clinic roles (avoid default global OWNER)
+    const vet1 = await usersService
+      .create(
+        'vet1@example.com',
+        'password123',
+        'Victor',
+        'Vet',
+        'VET',
+        clinic.id,
+      )
+      .catch(async () => (await usersService.findByEmail('vet1@example.com'))!);
+
+    const vet2 = await usersService
+      .create(
+        'vet2@example.com',
+        'password123',
+        'Vanessa',
+        'Vet',
+        'VET',
+        clinic.id,
+      )
+      .catch(async () => (await usersService.findByEmail('vet2@example.com'))!);
+
+    const asv = await usersService
+      .create(
+        'asv@example.com',
+        'password123',
+        'Aline',
+        'ASV',
+        'ASV',
+        clinic.id,
+      )
+      .catch(async () => (await usersService.findByEmail('asv@example.com'))!);
+
+    const adminClinic = await usersService
+      .create(
+        'admin@example.com',
+        'password123',
+        'Alex',
+        'Admin',
+        'ADMIN_CLINIC',
+        clinic.id,
+      )
+      .catch(
+        async () => (await usersService.findByEmail('admin@example.com'))!,
+      );
+
+    // Roles (idempotent): ensure links exist (in case users already existed earlier)
     const roles = [
       { userId: vet1.id, clinicId: clinic.id, role: 'VET' as const },
       { userId: vet2.id, clinicId: clinic.id, role: 'VET' as const },
