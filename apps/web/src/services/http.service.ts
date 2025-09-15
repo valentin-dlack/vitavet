@@ -33,7 +33,7 @@ class HttpService {
         // Token expired or invalid
         authService.logout();
         window.location.href = '/login';
-        throw new Error('Authentication required');
+        throw new Error('Authentification requise');
       }
 
       let message: string | undefined;
@@ -52,7 +52,7 @@ class HttpService {
         }
       }
 
-      throw new Error(message ?? `HTTP error! status: ${response.status}`);
+      throw new Error(message ?? `Erreur HTTP ! statut: ${response.status}`);
     }
 
     // Handle 204 No Content responses

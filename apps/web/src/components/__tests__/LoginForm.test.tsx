@@ -35,20 +35,20 @@ describe('LoginForm', () => {
   it('shows validation errors when fields are empty', async () => {
     renderWithRouter(<LoginForm />);
 
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(screen.getByRole('button', { name: /se connecter/i }));
 
-    expect(await screen.findByText(/email is required/i)).toBeInTheDocument();
-    expect(await screen.findByText(/password is required/i)).toBeInTheDocument();
+    expect(await screen.findByText(/l'email est requis/i)).toBeInTheDocument();
+    expect(await screen.findByText(/le mot de passe est requis/i)).toBeInTheDocument();
   });
 
   it('shows email format error', async () => {
     renderWithRouter(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'invalid' } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /se connecter/i }));
 
-    expect(await screen.findByText(/please enter a valid email address/i)).toBeInTheDocument();
+    expect(await screen.findByText(/veuillez saisir une adresse email valide/i)).toBeInTheDocument();
   });
 
   it('calls login and redirects on success', async () => {
@@ -57,8 +57,8 @@ describe('LoginForm', () => {
     renderWithRouter(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /se connecter/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Home')).toBeInTheDocument();
@@ -71,8 +71,8 @@ describe('LoginForm', () => {
     renderWithRouter(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: /se connecter/i }));
 
     expect(await screen.findByTestId('login-error')).toHaveTextContent('Invalid credentials');
   });

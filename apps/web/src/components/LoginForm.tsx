@@ -14,15 +14,15 @@ export function LoginForm() {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!form.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "L'email est requis";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Veuillez saisir une adresse email valide';
     }
 
     if (!form.password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Le mot de passe est requis';
     } else if (form.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
     }
 
     setErrors(newErrors);
@@ -49,7 +49,7 @@ export function LoginForm() {
       const from = state?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed';
+      const message = err instanceof Error ? err.message : 'Échec de la connexion';
       setErrors({ global: message });
     } finally {
       setSubmitting(false);
@@ -83,7 +83,7 @@ export function LoginForm() {
       </div>
 
       <div className="mb-6">
-        <label htmlFor="password" className="block font-medium">Password</label>
+        <label htmlFor="password" className="block font-medium">Mot de passe</label>
         <input
           id="password"
           name="password"
@@ -105,7 +105,7 @@ export function LoginForm() {
         disabled={submitting}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded disabled:opacity-50"
       >
-        {submitting ? 'Logging in...' : 'Login'}
+        {submitting ? 'Connexion en cours...' : 'Se connecter'}
       </button>
     </form>
   );

@@ -24,24 +24,24 @@ describe('RegisterForm', () => {
   it('should render the form with all fields', () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
-    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/prénom/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^nom/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/mot de passe/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /créer un compte/i })).toBeInTheDocument();
   });
 
   it('should validate required fields', async () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/first name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/last name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/email is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/le prénom est requis/i)).toBeInTheDocument();
+      expect(screen.getByText(/le nom est requis/i)).toBeInTheDocument();
+      expect(screen.getByText(/l'email est requis/i)).toBeInTheDocument();
+      expect(screen.getByText(/le mot de passe est requis/i)).toBeInTheDocument();
     });
 
     expect(mockAuthService.register).not.toHaveBeenCalled();
@@ -51,13 +51,13 @@ describe('RegisterForm', () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
     // Fill in required fields first
-    fireEvent.change(screen.getByLabelText(/first name/i), {
+    fireEvent.change(screen.getByLabelText(/prénom/i), {
       target: { value: 'John' },
     });
-    fireEvent.change(screen.getByLabelText(/last name/i), {
+    fireEvent.change(screen.getByLabelText(/^nom/i), {
       target: { value: 'Doe' },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), {
       target: { value: 'Password123!' },
     });
 
@@ -65,7 +65,7 @@ describe('RegisterForm', () => {
     const emailInput = screen.getByLabelText(/email/i);
     fireEvent.change(emailInput, { target: { value: 'not-an-email' } });
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
     expect(mockAuthService.register).not.toHaveBeenCalled();
@@ -74,14 +74,14 @@ describe('RegisterForm', () => {
   it('should validate password strength', async () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByLabelText(/mot de passe/i);
     fireEvent.change(passwordInput, { target: { value: 'weak' } });
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/password must be at least 8 characters long/i)).toBeInTheDocument();
+      expect(screen.getByText(/le mot de passe doit contenir au moins 8 caractères/i)).toBeInTheDocument();
     });
   });
 
@@ -105,20 +105,20 @@ describe('RegisterForm', () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
     // Fill in the form
-    fireEvent.change(screen.getByLabelText(/first name/i), {
+    fireEvent.change(screen.getByLabelText(/prénom/i), {
       target: { value: 'John' },
     });
-    fireEvent.change(screen.getByLabelText(/last name/i), {
+    fireEvent.change(screen.getByLabelText(/^nom/i), {
       target: { value: 'Doe' },
     });
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: 'test@example.com' },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), {
       target: { value: 'Password123!' },
     });
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -139,20 +139,20 @@ describe('RegisterForm', () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
     // Fill in the form
-    fireEvent.change(screen.getByLabelText(/first name/i), {
+    fireEvent.change(screen.getByLabelText(/prénom/i), {
       target: { value: 'John' },
     });
-    fireEvent.change(screen.getByLabelText(/last name/i), {
+    fireEvent.change(screen.getByLabelText(/^nom/i), {
       target: { value: 'Doe' },
     });
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: 'test@example.com' },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), {
       target: { value: 'Password123!' },
     });
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -166,24 +166,24 @@ describe('RegisterForm', () => {
     render(<RegisterForm onSuccess={mockOnSuccess} onError={mockOnError} />);
 
     // Fill in the form
-    fireEvent.change(screen.getByLabelText(/first name/i), {
+    fireEvent.change(screen.getByLabelText(/prénom/i), {
       target: { value: 'John' },
     });
-    fireEvent.change(screen.getByLabelText(/last name/i), {
+    fireEvent.change(screen.getByLabelText(/^nom/i), {
       target: { value: 'Doe' },
     });
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: 'test@example.com' },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/mot de passe/i), {
       target: { value: 'Password123!' },
     });
 
-    const submitButton = screen.getByRole('button', { name: /create account/i });
+    const submitButton = screen.getByRole('button', { name: /créer un compte/i });
     fireEvent.click(submitButton);
 
-    expect(screen.getByText(/creating account/i)).toBeInTheDocument();
-    expect(screen.getByText(/please wait while we create your account/i)).toBeInTheDocument();
+    expect(screen.getByText(/création du compte/i)).toBeInTheDocument();
+    expect(screen.getByText(/merci de patienter/i)).toBeInTheDocument();
     expect(submitButton).toBeDisabled();
   });
 });
