@@ -116,15 +116,9 @@ export class AdminService {
     }
 
     // Prevent deleting another webmaster (only if we can resolve role)
-    const maybeFindPrimaryRole: any = (this.usersService as any)
-      .findPrimaryRole;
-    if (typeof maybeFindPrimaryRole === 'function') {
-      const targetPrimaryRole = await (
-        maybeFindPrimaryRole as (userId: string) => Promise<string>
-      ).call(this.usersService, targetUserId);
-      if (targetPrimaryRole === 'WEBMASTER') {
-        throw new ForbiddenException('You cannot delete a webmaster');
-      }
+    const targetPrimaryRole = await this.usersService.findPrimaryRole(targetUserId);
+    if (targetPrimaryRole === 'WEBMASTER') {
+      throw new ForbiddenException('You cannot delete a webmaster');
     }
 
     return this.usersService.remove(targetUserId);
