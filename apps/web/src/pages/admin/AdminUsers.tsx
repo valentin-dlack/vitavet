@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import type { AdminUserDto } from '../../services/admin.service';
+import { useAuth } from '../../hooks/useAuth';
 
 // Role configuration with colors and icons
 const roleConfig = {
@@ -13,6 +14,7 @@ const roleConfig = {
 };
 
 export function AdminUsers() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,19 @@ export function AdminUsers() {
   }, []);
 
   const handleDelete = async (userId: string) => {
+    const target = users.find((u) => u.id === userId);
+    const isSelf = user?.id === userId;
+    const isTargetWebmaster = (target?.role || '').toUpperCase() === 'WEBMASTER';
+
+    if (isSelf || isTargetWebmaster) {
+      setError(
+        isSelf
+          ? 'Vous ne pouvez pas supprimer votre propre compte.'
+          : 'Vous ne pouvez pas supprimer un compte webmaster.',
+      );
+      return;
+    }
+
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       try {
         await adminService.deleteUser(userId);
@@ -72,7 +87,7 @@ export function AdminUsers() {
         </Link>
       </div>
       {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-red-500" role="alert">{error}</p>}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
           <thead>
@@ -87,31 +102,51 @@ export function AdminUsers() {
           </thead>
           <tbody>
             {users && users.length > 0 ? (
-              users.map((user) => (
-                <tr key={user.id}>
-                  <td className="py-2 px-4 border-b font-medium">{user.email}</td>
-                  <td className="py-2 px-4 border-b">{user.firstName} {user.lastName}</td>
-                  <td className="py-2 px-4 border-b">
-                    {getRoleBadge(user.role || 'OWNER')}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.isEmailVerified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {user.isEmailVerified ? '✅ Oui' : '⏳ Non'}
-                    </span>
-                  </td>
-                  <td className="py-2 px-4 border-b text-sm text-gray-600">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-2 px-4 border-b space-x-2">
-                    <Link to={`/admin/users/${user.id}/edit`} className="text-green-600 hover:underline">Modifier</Link>
-                    <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:underline">Supprimer</button>
-                  </td>
-                </tr>
-              ))
+              users.map((u) => {
+                const isSelf = user?.id === u.id;
+                const isWebmaster = (u.role || '').toUpperCase() === 'WEBMASTER';
+                const canDelete = !isSelf && !isWebmaster;
+                return (
+                  <tr key={u.id}>
+                    <td className="py-2 px-4 border-b font-medium">{u.email}</td>
+                    <td className="py-2 px-4 border-b">{u.firstName} {u.lastName}</td>
+                    <td className="py-2 px-4 border-b">
+                      {getRoleBadge(u.role || 'OWNER')}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        u.isEmailVerified 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {u.isEmailVerified ? '✅ Oui' : '⏳ Non'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-4 border-b text-sm text-gray-600">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 px-4 border-b space-x-2">
+                      <Link to={`/admin/users/${u.id}/edit`} className="text-green-600 hover:underline">Modifier</Link>
+                      <button
+                        onClick={() => handleDelete(u.id)}
+                        className={`hover:underline ${canDelete ? 'text-red-600' : 'text-gray-400 cursor-not-allowed'}`}
+                        disabled={!canDelete}
+                        aria-disabled={!canDelete}
+                        aria-label={canDelete ? 'Supprimer' : 'Suppression désactivée'}
+                        title={
+                          isSelf
+                            ? 'Vous ne pouvez pas supprimer votre propre compte'
+                            : isWebmaster
+                              ? 'Vous ne pouvez pas supprimer un webmaster'
+                              : 'Supprimer'
+                        }
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={6} className="py-4 px-4 text-center text-gray-500">

@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -159,8 +160,8 @@ export class AdminController {
   @ApiNotFoundResponse({
     description: 'Utilisateur non trouvé',
   })
-  removeUser(@Param('id') id: string) {
-    return this.adminService.removeUser(id);
+  removeUser(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.removeUser(req.user?.id, id);
   }
 
   @Patch('clinics/:id')

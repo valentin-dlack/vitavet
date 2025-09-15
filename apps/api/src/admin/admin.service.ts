@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ClinicsService } from '../clinics/clinics.service';
@@ -99,8 +100,39 @@ export class AdminService {
     return { ...result, fullName: `${result.firstName} ${result.lastName}` };
   }
 
-  async removeUser(userId: string): Promise<void> {
-    return this.usersService.remove(userId);
+  // Overloaded signatures for backward compatibility
+  async removeUser(targetUserId: string): Promise<void>;
+  async removeUser(
+    requesterId: string | undefined,
+    targetUserId: string,
+  ): Promise<void>;
+  async removeUser(arg1: string | undefined, arg2?: string): Promise<void> {
+    const requesterId = arg2 ? arg1 : undefined;
+    const targetUserId = arg2 ? arg2 : (arg1 as string);
+
+    // Do not allow self-deletion (only if requesterId is provided)
+    if (requesterId && requesterId === targetUserId) {
+      throw new ForbiddenException('You cannot delete your own account');
+    }
+
+    // Prevent deleting another webmaster (only if we can resolve role)
+    type WithFindPrimaryRole = {
+      findPrimaryRole: (userId: string) => Promise<UserRole | null>;
+    };
+    const hasFindPrimaryRole = (
+      svc: unknown,
+    ): svc is UsersService & WithFindPrimaryRole =>
+      typeof (svc as WithFindPrimaryRole).findPrimaryRole === 'function';
+
+    if (hasFindPrimaryRole(this.usersService)) {
+      const targetPrimaryRole =
+        await this.usersService.findPrimaryRole(targetUserId);
+      if (targetPrimaryRole === 'WEBMASTER') {
+        throw new ForbiddenException('You cannot delete a webmaster');
+      }
+    }
+
+    return this.usersService.remove(targetUserId);
   }
 
   async updateClinic(
