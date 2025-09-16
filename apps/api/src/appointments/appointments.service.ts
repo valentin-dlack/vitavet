@@ -302,6 +302,10 @@ export class AppointmentsService {
       throw new ConflictException('Appointment is already completed');
     }
 
+    if (appointment.status !== 'CONFIRMED') {
+      throw new ConflictException('Appointment is not confirmed');
+    }
+
     appointment.notes = completeDto.notes ?? appointment.notes;
     appointment.report = completeDto.report ?? appointment.report;
     appointment.status = 'COMPLETED';

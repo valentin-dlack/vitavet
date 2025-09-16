@@ -780,7 +780,7 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
 
             <div className="mt-4 flex justify-end gap-2">
               <button className="px-4 py-2 border rounded" onClick={onClose}>Fermer</button>
-              {item.status !== 'COMPLETED' && (
+              {item.status === 'CONFIRMED' && (
                 <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={() => setIsCompleting(true)}>
                   Compléter le RDV
                 </button>

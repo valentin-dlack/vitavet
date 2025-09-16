@@ -13,11 +13,11 @@ export function HealthCheck() {
     const checkHealth = async () => {
       try {
         const data = await httpService.get<HealthStatus>('/health');
-        // eslint-disable-next-line no-console
+         
         console.info('[VitaVet] API health', data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        // eslint-disable-next-line no-console
+         
         console.warn('[VitaVet] API health error', message);
       }
     };

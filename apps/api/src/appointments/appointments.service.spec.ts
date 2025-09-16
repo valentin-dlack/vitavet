@@ -539,5 +539,19 @@ describe('AppointmentsService', () => {
         service.completeAppointment('apt-1', 'vet-1', {}),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('should throw ConflictException if appointment is not confirmed', async () => {
+      const appointment = {
+        id: 'apt-2',
+        vetUserId: 'vet-1',
+        status: 'PENDING',
+      };
+      jest
+        .spyOn(appointmentRepo, 'findOne')
+        .mockResolvedValue(appointment as any);
+      await expect(
+        service.completeAppointment('apt-2', 'vet-1', {}),
+      ).rejects.toThrow(ConflictException);
+    });
   });
 });

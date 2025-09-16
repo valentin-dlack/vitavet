@@ -176,6 +176,28 @@ describe('VetAgenda', () => {
     });
   });
 
+  it('hides complete button when status is not CONFIRMED', async () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 30).toISOString();
+    (agendaService.getMyDay as any).mockResolvedValue([
+      { id: 'apt-rejected', startsAt: start, endsAt: end, status: 'REJECTED', animal: { name: 'Kitty' } },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Kitty/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Détails'));
+    await waitFor(() => {
+      expect(screen.getByText(/Détails du rendez-vous/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Compléter le RDV' })).not.toBeInTheDocument();
+  });
+
   it('allows rejecting a pending appointment from the modal', async () => {
     // Mock confirm dialog
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
