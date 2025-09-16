@@ -526,6 +526,19 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
     }
   };
 
+  const handleConfirmPending = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await appointmentsService.confirmAppointment(item.id);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to confirm appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileUpload = async () => {
     if (!file) return;
     setUploading(true);
@@ -604,7 +617,26 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
               <div className="border rounded p-3 md:col-span-2">
                 <div className="font-medium mb-1">Rendez-vous</div>
                 <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="text-sm text-gray-700">Statut: {statusLabel(item.status)}</div>
+                <div className="text-sm text-gray-700 flex items-center gap-2">Statut: {statusLabel(item.status)} {item.status === 'PENDING' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="ml-2 text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                      onClick={handleConfirmPending}
+                      disabled={loading}
+                    >
+                      Valider
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600 cursor-not-allowed"
+                      title="Refus non disponible pour le moment"
+                      disabled
+                    >
+                      Refuser
+                    </button>
+                  </>
+                ) : null}</div>
                 {history ? (
                   (() => {
                     const current = history.appointments.find((a) => a.id === item.id);

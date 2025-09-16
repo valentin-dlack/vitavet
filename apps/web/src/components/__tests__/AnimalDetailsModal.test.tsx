@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnimalDetailsModal } from '../AnimalDetailsModal';
 import { animalsService } from '../../services/animals.service';
@@ -110,12 +110,20 @@ describe('AnimalDetailsModal', () => {
     });
   });
 
-  it('displays recent reports', async () => {
+  it('displays recent reports inside expandable details', async () => {
     render(<AnimalDetailsModal {...defaultProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Rapports récents')).toBeInTheDocument();
-      expect(screen.getByText('Rapport: Animal en bonne santé')).toBeInTheDocument();
+    });
+
+    // Expand any "Détails" sections to reveal report content
+    const detailButtons = screen.getAllByRole('button', { name: 'Détails' });
+    detailButtons.forEach(btn => fireEvent.click(btn));
+
+    await waitFor(() => {
+      // Report content should now be visible
+      expect(screen.getByText('Animal en bonne santé')).toBeInTheDocument();
     });
   });
 
