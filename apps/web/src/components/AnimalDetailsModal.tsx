@@ -49,6 +49,35 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 	const [error, setError] = useState<string | null>(null);
 	const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
 	const [documents, setDocuments] = useState<Record<string, { id: string; filename: string }[]>>({});
+	const [isEditing, setIsEditing] = useState(false);
+	const [editError, setEditError] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
+	interface EditForm {
+		name: string;
+		birthdate: string | '';
+		species: string;
+		breed: string;
+		sex: 'MALE' | 'FEMALE' | 'UNKNOWN';
+		isSterilized: boolean;
+		color: string;
+		chipId: string;
+		weightKg: number | '';
+		heightCm: number | '';
+		isNac: boolean;
+	}
+	const [form, setForm] = useState<EditForm>({
+		name: animal?.name || '',
+		birthdate: animal?.birthdate || '',
+		species: animal?.species || '',
+		breed: animal?.breed || '',
+		sex: (animal?.sex as 'MALE' | 'FEMALE' | 'UNKNOWN') || 'UNKNOWN',
+		isSterilized: Boolean(animal?.isSterilized),
+		color: animal?.color || '',
+		chipId: animal?.chipId || '',
+		weightKg: (animal?.weightKg as number | null) ?? '',
+		heightCm: (animal?.heightCm as number | null) ?? '',
+		isNac: Boolean(animal?.isNac),
+	});
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
 	useEffect(() => {
@@ -133,7 +162,15 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 							{animal.species || '—'}{animal.breed ? ` • ${animal.breed}` : ''}
 						</div>
 					</div>
-					<button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold" aria-label="Fermer">×</button>
+					<div className="flex items-center gap-2">
+						<button
+							className="text-sm px-3 py-1 border rounded"
+							onClick={() => setIsEditing((v) => !v)}
+						>
+							{isEditing ? 'Annuler' : 'Modifier'}
+						</button>
+						<button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold" aria-label="Fermer">×</button>
+					</div>
 				</div>
 
 				{loading ? <div>Chargement…</div> : null}
@@ -142,16 +179,58 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div className="border rounded p-4">
 						<div className="font-medium mb-2">Détails</div>
-						<ul className="text-sm space-y-1 text-gray-700">
-							<li><span className="text-gray-500">Âge:</span> {computeAge(animal.birthdate) || '—'}</li>
-							<li><span className="text-gray-500">Sexe:</span> {animal.sex || '—'}</li>
-							<li><span className="text-gray-500">Poids:</span> {animal.weightKg != null ? `${animal.weightKg} kg` : '—'}</li>
-							<li><span className="text-gray-500">Taille:</span> {animal.heightCm != null ? `${animal.heightCm} cm` : '—'}</li>
-							<li><span className="text-gray-500">Couleur:</span> {animal.color || '—'}</li>
-							<li><span className="text-gray-500">Puce:</span> {animal.chipId || '—'}</li>
-							<li><span className="text-gray-500">Stérilisé:</span> {animal.isSterilized ? 'Oui' : 'Non'}</li>
-							<li><span className="text-gray-500">NAC:</span> {animal.isNac ? 'Oui' : 'Non'}</li>
-						</ul>
+						{!isEditing ? (
+							<ul className="text-sm space-y-1 text-gray-700">
+								<li><span className="text-gray-500">Âge:</span> {computeAge(animal.birthdate) || '—'}</li>
+								<li><span className="text-gray-500">Sexe:</span> {animal.sex || '—'}</li>
+								<li><span className="text-gray-500">Poids:</span> {animal.weightKg != null ? `${animal.weightKg} kg` : '—'}</li>
+								<li><span className="text-gray-500">Taille:</span> {animal.heightCm != null ? `${animal.heightCm} cm` : '—'}</li>
+								<li><span className="text-gray-500">Couleur:</span> {animal.color || '—'}</li>
+								<li><span className="text-gray-500">Puce:</span> {animal.chipId || '—'}</li>
+								<li><span className="text-gray-500">Stérilisé:</span> {animal.isSterilized ? 'Oui' : 'Non'}</li>
+								<li><span className="text-gray-500">NAC:</span> {animal.isNac ? 'Oui' : 'Non'}</li>
+							</ul>
+						) : (
+							<form onSubmit={async (e) => {
+								e.preventDefault();
+								setSaving(true);
+								setEditError(null);
+								try {
+									const payload = {
+										...form,
+										weightKg: form.weightKg === '' ? undefined : Number(form.weightKg),
+										heightCm: form.heightCm === '' ? undefined : Number(form.heightCm),
+									};
+									await animalsService.updateAnimal(animal.id, payload);
+									// shallow update client-side view
+									setIsEditing(false);
+								} catch (e) {
+									setEditError(e instanceof Error ? e.message : 'Erreur lors de la sauvegarde');
+								} finally {
+									setSaving(false);
+								}
+							}} className="space-y-3">
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+									<label className="text-sm">Nom<input className="mt-1 border rounded p-2 w-full" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
+									<label className="text-sm">Naissance<input type="date" className="mt-1 border rounded p-2 w-full" value={form.birthdate || ''} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} /></label>
+									<label className="text-sm">Espèce<input className="mt-1 border rounded p-2 w-full" value={form.species} onChange={(e) => setForm({ ...form, species: e.target.value })} /></label>
+									<label className="text-sm">Race<input className="mt-1 border rounded p-2 w-full" value={form.breed} onChange={(e) => setForm({ ...form, breed: e.target.value })} /></label>
+									<label className="text-sm">Sexe<select className="mt-1 border rounded p-2 w-full" value={form.sex} onChange={(e) => setForm({ ...form, sex: e.target.value as 'MALE' | 'FEMALE' | 'UNKNOWN' })}><option value="UNKNOWN">Non déterminé</option><option value="MALE">Mâle</option><option value="FEMALE">Femelle</option></select></label>
+									<label className="text-sm">Couleur<input className="mt-1 border rounded p-2 w-full" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} /></label>
+									<label className="text-sm">Puce<input className="mt-1 border rounded p-2 w-full" value={form.chipId || ''} onChange={(e) => setForm({ ...form, chipId: e.target.value })} /></label>
+									<label className="text-sm">Poids (kg)<input type="number" min={0} step={0.1} className="mt-1 border rounded p-2 w-full" value={form.weightKg === '' ? '' : String(form.weightKg)} onChange={(e) => setForm({ ...form, weightKg: e.target.value === '' ? '' : Number(e.target.value) })} /></label>
+									<label className="text-sm">Taille (cm)<input type="number" min={0} className="mt-1 border rounded p-2 w-full" value={form.heightCm === '' ? '' : String(form.heightCm)} onChange={(e) => setForm({ ...form, heightCm: e.target.value === '' ? '' : Number(e.target.value) })} /></label>
+								</div>
+								<div className="flex items-center gap-4">
+									<label className="text-sm inline-flex items-center gap-2"><input type="checkbox" checked={form.isSterilized} onChange={(e) => setForm({ ...form, isSterilized: e.target.checked })} /> Stérilisé(e)</label>
+									<label className="text-sm inline-flex items-center gap-2"><input type="checkbox" checked={form.isNac} onChange={(e) => setForm({ ...form, isNac: e.target.checked })} /> NAC</label>
+								</div>
+								{editError ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{editError}</div> : null}
+								<div className="flex justify-end gap-2">
+									<button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50" disabled={saving}>{saving ? 'Sauvegarde…' : 'Enregistrer'}</button>
+								</div>
+							</form>
+						)}
 					</div>
 
 					<div className="border rounded p-4">

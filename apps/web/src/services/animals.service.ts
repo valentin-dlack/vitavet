@@ -69,6 +69,10 @@ class AnimalsService {
   async getHistory(animalId: string): Promise<AnimalHistoryDto> {
     return httpService.get<AnimalHistoryDto>(`/animals/${encodeURIComponent(animalId)}/history`);
   }
+
+  async updateAnimal(animalId: string, dto: Partial<Omit<AnimalDto, 'id' | 'ownerId' | 'clinicId'>>): Promise<AnimalDto> {
+    return httpService.patch<AnimalDto>(`/animals/${encodeURIComponent(animalId)}`, dto as any);
+  }
 }
 
 export const animalsService = new AnimalsService();
