@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import type { AnimalDto, AnimalHistoryDto } from '../services/animals.service';
 import { animalsService } from '../services/animals.service';
 import { documentsService } from '../services/documents.service';
@@ -79,6 +79,26 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 		isNac: Boolean(animal?.isNac),
 	});
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+	const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+	// Sync form values with current animal when entering edit mode and focus first input
+	useEffect(() => {
+		if (!isEditing || !animal) return;
+		setForm({
+			name: animal.name || '',
+			birthdate: animal.birthdate || '',
+			species: animal.species || '',
+			breed: animal.breed || '',
+			sex: (animal.sex as 'MALE' | 'FEMALE' | 'UNKNOWN') || 'UNKNOWN',
+			isSterilized: Boolean(animal.isSterilized),
+			color: animal.color || '',
+			chipId: animal.chipId || '',
+			weightKg: (animal.weightKg as number | null) ?? '',
+			heightCm: (animal.heightCm as number | null) ?? '',
+			isNac: Boolean(animal.isNac),
+		});
+		nameInputRef.current?.focus();
+	}, [isEditing, animal]);
 
 	useEffect(() => {
 		let isCancelled = false;
@@ -213,7 +233,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 								}
 							}} className="space-y-3">
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-									<label className="text-sm">Nom<input className="mt-1 border rounded p-2 w-full" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
+									<label className="text-sm">Nom<input ref={nameInputRef} className="mt-1 border rounded p-2 w-full" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
 									<label className="text-sm">Naissance<input type="date" className="mt-1 border rounded p-2 w-full" value={form.birthdate || ''} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} /></label>
 									<label className="text-sm">Espèce<input className="mt-1 border rounded p-2 w-full" value={form.species} onChange={(e) => setForm({ ...form, species: e.target.value })} /></label>
 									<label className="text-sm">Race<input className="mt-1 border rounded p-2 w-full" value={form.breed} onChange={(e) => setForm({ ...form, breed: e.target.value })} /></label>
