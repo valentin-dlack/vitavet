@@ -7,6 +7,7 @@ vi.mock('../http.service', () => ({
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
+    delete: vi.fn(),
     download: vi.fn(),
   },
 }));

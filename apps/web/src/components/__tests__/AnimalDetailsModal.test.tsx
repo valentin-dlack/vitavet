@@ -158,7 +158,7 @@ describe('AnimalDetailsModal', () => {
       expect(screen.getByText('Détails')).toBeInTheDocument();
     });
 
-    const deleteBtn = screen.getByRole('button', { name: "Supprimer" });
+    const deleteBtn = screen.getByRole('button', { name: "Supprimer l'animal" });
     fireEvent.click(deleteBtn);
 
     await waitFor(() => {
