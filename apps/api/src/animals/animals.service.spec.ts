@@ -7,6 +7,7 @@ import { Appointment } from '../appointments/entities/appointment.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { Clinic } from '../clinics/entities/clinic.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { UpdateAnimalDto } from './dto/update-animal.dto';
 
 describe('AnimalsService', () => {
   let service: AnimalsService;
@@ -151,6 +152,44 @@ describe('AnimalsService', () => {
         .mockResolvedValue([{ id: 'apt1', notes: 'internal' }]);
       const res = await service.getAnimalHistory('vet1', 'a1');
       expect(res.appointments[0]).toHaveProperty('notes', 'internal');
+    });
+  });
+
+  describe('updateAnimal', () => {
+    it('throws NotFoundException if animal not found', async () => {
+      (repo.findOne as any) = jest.fn().mockResolvedValue(null);
+      await expect(
+        service.updateAnimal('owner1', 'missing', { name: 'X' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException if requester not owner', async () => {
+      (repo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'a1', ownerId: 'other' });
+      await expect(
+        service.updateAnimal('owner1', 'a1', { name: 'X' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updates allowed fields and saves', async () => {
+      const existing = {
+        id: 'a1',
+        ownerId: 'owner1',
+        name: 'Old',
+        species: 'Chien',
+      } as any;
+      (repo.findOne as any) = jest.fn().mockResolvedValue(existing);
+      (repo.save as any) = jest
+        .fn()
+        .mockImplementation((an) => Promise.resolve(an));
+
+      const dto: UpdateAnimalDto = { name: 'New', weightKg: 12.3 };
+      const res = await service.updateAnimal('owner1', 'a1', dto);
+
+      expect(repo.save).toHaveBeenCalled();
+      expect(res.name).toBe('New');
+      expect(res.weightKg).toBe(12.3);
     });
   });
 });

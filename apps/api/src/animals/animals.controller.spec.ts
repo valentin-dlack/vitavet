@@ -14,6 +14,7 @@ describe('AnimalsController', () => {
     findByOwnerAndClinic: jest.fn(),
     getAnimalHistory: jest.fn(),
     createAnimal: jest.fn(),
+    updateAnimal: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -102,6 +103,22 @@ describe('AnimalsController', () => {
 
       expect(service.createAnimal).toHaveBeenCalledWith(createDto, 'user-123');
       expect(result).toEqual(mockAnimal);
+    });
+  });
+
+  describe('updateAnimal', () => {
+    it('should update animal for owner', async () => {
+      const mockUser = { id: 'user-123' } as User;
+      const dto = { name: 'Milo 2', weightKg: 12.5 } as any;
+      const updated = { id: 'animal-123', ...dto };
+      mockAnimalsService.updateAnimal.mockResolvedValue(updated);
+      const result = await controller.updateAnimal(mockUser, 'animal-123', dto);
+      expect(mockAnimalsService.updateAnimal).toHaveBeenCalledWith(
+        'user-123',
+        'animal-123',
+        dto,
+      );
+      expect(result).toEqual(updated);
     });
   });
 });

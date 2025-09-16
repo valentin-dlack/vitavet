@@ -9,6 +9,7 @@ import { Animal } from './entities/animal.entity';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { CreateAnimalDto } from './dto/create-animal.dto';
+import { UpdateAnimalDto } from './dto/update-animal.dto';
 import { Clinic } from '../clinics/entities/clinic.entity';
 
 @Injectable()
@@ -98,5 +99,40 @@ export class AnimalsService {
     });
 
     return { animal, appointments: filteredAppointments };
+  }
+
+  async updateAnimal(
+    requesterId: string,
+    animalId: string,
+    dto: UpdateAnimalDto,
+  ): Promise<Animal> {
+    const animal = await this.animalRepository.findOne({
+      where: { id: animalId },
+    });
+    if (!animal) throw new NotFoundException('Animal not found');
+    if (animal.ownerId !== requesterId) {
+      throw new ForbiddenException('Only owner can update animal');
+    }
+    // Only assign allowed fields
+    const allowed: Array<keyof UpdateAnimalDto> = [
+      'name',
+      'birthdate',
+      'species',
+      'breed',
+      'sex',
+      'isSterilized',
+      'color',
+      'chipId',
+      'weightKg',
+      'heightCm',
+      'isNac',
+    ];
+    for (const key of allowed) {
+      if (key in dto) {
+        // @ts-expect-error dynamic assignment on entity
+        animal[key] = dto[key];
+      }
+    }
+    return this.animalRepository.save(animal);
   }
 }

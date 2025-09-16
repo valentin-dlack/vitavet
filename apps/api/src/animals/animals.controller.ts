@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Query,
   UseGuards,
@@ -14,6 +15,7 @@ import { User } from '../users/entities/user.entity';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateAnimalDto } from './dto/create-animal.dto';
+import { UpdateAnimalDto } from './dto/update-animal.dto';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -194,5 +196,28 @@ export class AnimalsController {
     @Param('animalId') animalId: string,
   ) {
     return this.animalsService.getAnimalHistory(user.id, animalId);
+  }
+
+  @ApiOperation({
+    summary: 'Mettre à jour un animal',
+    description:
+      "Mise à jour (OWNER uniquement) de champs autorisés d'un animal",
+  })
+  @ApiParam({ name: 'animalId', description: "ID de l'animal", type: 'string' })
+  @ApiOkResponse({ description: 'Animal mis à jour' })
+  @ApiBadRequestResponse({ description: 'Données invalides' })
+  @ApiUnauthorizedResponse({ description: 'Token JWT invalide ou manquant' })
+  @ApiForbiddenResponse({
+    description: 'Permissions insuffisantes (OWNER requis)',
+  })
+  @ApiNotFoundResponse({ description: 'Animal non trouvé' })
+  @Roles('OWNER')
+  @Patch(':animalId')
+  async updateAnimal(
+    @CurrentUser() user: User,
+    @Param('animalId') animalId: string,
+    @Body() dto: UpdateAnimalDto,
+  ) {
+    return this.animalsService.updateAnimal(user.id, animalId, dto);
   }
 }
