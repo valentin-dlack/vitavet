@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import React from 'react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnimalDetailsModal } from '../AnimalDetailsModal';
@@ -56,7 +57,7 @@ describe('AnimalDetailsModal', () => {
         id: 'apt-2',
         startsAt: '2025-12-15T14:00:00Z',
         endsAt: '2025-12-15T15:00:00Z',
-        status: 'SCHEDULED',
+        status: 'CONFIRMED',
         vet: { firstName: 'Dr', lastName: 'Johnson' },
         type: { label: 'Vaccination' },
       },
