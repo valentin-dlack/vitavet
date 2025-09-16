@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnimalDetailsModal } from '../AnimalDetailsModal';
 import { animalsService } from '../../services/animals.service';
@@ -8,6 +9,7 @@ import { documentsService } from '../../services/documents.service';
 vi.mock('../../services/animals.service', () => ({
   animalsService: {
     getHistory: vi.fn(),
+    updateAnimal: vi.fn(),
   },
 }));
 
@@ -124,6 +126,23 @@ describe('AnimalDetailsModal', () => {
     await waitFor(() => {
       // Report content should now be visible
       expect(screen.getByText('Animal en bonne santé')).toBeInTheDocument();
+    });
+  });
+
+  it('allows editing and saving animal data', async () => {
+    render(<AnimalDetailsModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Détails')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }));
+    const nameInput = screen.getByLabelText('Nom');
+    fireEvent.change(nameInput, { target: { value: 'Milo 2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    await waitFor(() => {
+      expect(mockAnimalsService.updateAnimal).toHaveBeenCalled();
     });
   });
 

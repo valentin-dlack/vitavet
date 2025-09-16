@@ -153,11 +153,11 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 	if (!isOpen || !animal) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true">
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="animal-details-title">
 			<div className="bg-white rounded-lg p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto" role="document">
 				<div className="flex justify-between items-start gap-3 mb-4">
 					<div>
-						<h2 className="text-xl font-semibold mb-1">{animal.name}</h2>
+						<h2 id="animal-details-title" className="text-xl font-semibold mb-1">{animal.name}</h2>
 						<div className="text-sm text-gray-600">
 							{animal.species || '—'}{animal.breed ? ` • ${animal.breed}` : ''}
 						</div>
@@ -166,6 +166,8 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 						<button
 							className="text-sm px-3 py-1 border rounded"
 							onClick={() => setIsEditing((v) => !v)}
+							aria-pressed={isEditing}
+							aria-controls="animal-edit-form"
 						>
 							{isEditing ? 'Annuler' : 'Modifier'}
 						</button>
@@ -191,7 +193,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 								<li><span className="text-gray-500">NAC:</span> {animal.isNac ? 'Oui' : 'Non'}</li>
 							</ul>
 						) : (
-							<form onSubmit={async (e) => {
+							<form id="animal-edit-form" onSubmit={async (e) => {
 								e.preventDefault();
 								setSaving(true);
 								setEditError(null);
