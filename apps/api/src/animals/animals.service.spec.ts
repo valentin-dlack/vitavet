@@ -6,6 +6,7 @@ import { Animal } from './entities/animal.entity';
 import { Appointment } from '../appointments/entities/appointment.entity';
 import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { Clinic } from '../clinics/entities/clinic.entity';
+import { DataSource } from 'typeorm';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UpdateAnimalDto } from './dto/update-animal.dto';
 
@@ -46,6 +47,18 @@ describe('AnimalsService', () => {
           useValue: userClinicRoleRepoMock,
         },
         { provide: getRepositoryToken(Clinic), useValue: clinicRepoMock },
+        {
+          provide: DataSource,
+          useValue: {
+            transaction: jest
+              .fn()
+              .mockImplementation(
+                (cb: (tx: { remove: jest.Mock }) => Promise<void> | void) => {
+                  return cb({ remove: jest.fn() } as any);
+                },
+              ),
+          },
+        },
       ],
     }).compile();
 
@@ -190,6 +203,42 @@ describe('AnimalsService', () => {
       expect(repo.save).toHaveBeenCalled();
       expect(res.name).toBe('New');
       expect(res.weightKg).toBe(12.3);
+    });
+  });
+
+  describe('deleteAnimal', () => {
+    it('throws NotFoundException if animal not found', async () => {
+      (repo.findOne as any) = jest.fn().mockResolvedValue(null);
+      await expect(service.deleteAnimal('owner1', 'missing')).rejects.toThrow(
+        'Animal not found',
+      );
+    });
+
+    it('throws ForbiddenException if requester not owner', async () => {
+      (repo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'a1', ownerId: 'other' });
+      await expect(service.deleteAnimal('owner1', 'a1')).rejects.toThrow(
+        'Only owner can delete animal',
+      );
+    });
+
+    it('deletes animal in transaction', async () => {
+      const toDelete = { id: 'a1', ownerId: 'owner1' } as any;
+      (repo.findOne as any) = jest.fn().mockResolvedValue(toDelete);
+      const tx = { remove: jest.fn().mockResolvedValue(undefined) };
+      const ds = (service as any).dataSource as DataSource;
+      (ds.transaction as any) = jest
+        .fn()
+        .mockImplementation(
+          async (cb: (t: typeof tx) => Promise<void> | void) => {
+            await cb(tx);
+          },
+        );
+
+      await service.deleteAnimal('owner1', 'a1');
+      expect(ds.transaction).toHaveBeenCalled();
+      expect(tx.remove).toHaveBeenCalledWith(toDelete);
     });
   });
 });

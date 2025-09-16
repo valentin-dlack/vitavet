@@ -15,6 +15,7 @@ describe('AnimalsController', () => {
     getAnimalHistory: jest.fn(),
     createAnimal: jest.fn(),
     updateAnimal: jest.fn(),
+    deleteAnimal: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -119,6 +120,19 @@ describe('AnimalsController', () => {
         dto,
       );
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe('deleteAnimal', () => {
+    it('should delete animal and return 204', async () => {
+      const mockUser = { id: 'user-123' } as User;
+      mockAnimalsService.deleteAnimal.mockResolvedValue(undefined);
+      const res = await controller.deleteAnimal(mockUser, 'animal-123');
+      expect(mockAnimalsService.deleteAnimal).toHaveBeenCalledWith(
+        'user-123',
+        'animal-123',
+      );
+      expect(res).toBeUndefined();
     });
   });
 });

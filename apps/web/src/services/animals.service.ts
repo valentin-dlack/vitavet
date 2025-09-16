@@ -79,6 +79,10 @@ class AnimalsService {
       dto
     );
   }
+
+  async deleteAnimal(animalId: string): Promise<void> {
+    await httpService.delete(`/animals/${encodeURIComponent(animalId)}`);
+  }
 }
 
 export const animalsService = new AnimalsService();
