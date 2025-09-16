@@ -257,6 +257,42 @@ export class AppointmentsController {
     };
   }
 
+  @Patch(':id/reject')
+  @Roles('ASV', 'VET', 'ADMIN_CLINIC')
+  @ApiOperation({
+    summary: 'Refuser un rendez-vous',
+    description: 'Refuse un rendez-vous en attente (ASV, VET, ADMIN_CLINIC)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID du rendez-vous à refuser',
+    type: 'string',
+  })
+  @ApiOkResponse({
+    description: 'Rendez-vous refusé avec succès',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        status: { type: 'string', example: 'REJECTED' },
+        message: {
+          type: 'string',
+          example: 'Appointment rejected successfully.',
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Token JWT invalide ou manquant' })
+  @ApiForbiddenResponse({ description: 'Permissions insuffisantes' })
+  @ApiNotFoundResponse({ description: 'Rendez-vous non trouvé' })
+  async rejectAppointment(@Param('id') id: string) {
+    const appointment = await this.appointmentsService.rejectAppointment(id);
+    return {
+      ...appointment,
+      message: 'Appointment rejected successfully.',
+    };
+  }
+
   @Patch(':id/complete')
   @Roles('VET')
   @ApiOperation({

@@ -14,6 +14,7 @@ describe('AppointmentsController', () => {
     createAppointment: jest.fn(),
     getPendingAppointments: jest.fn(),
     confirmAppointment: jest.fn(),
+    rejectAppointment: jest.fn(),
   } as unknown as AppointmentsService;
 
   beforeEach(async () => {
@@ -85,6 +86,18 @@ describe('AppointmentsController', () => {
     expect(res).toMatchObject({
       id: 'apt',
       message: 'Appointment confirmed successfully.',
+    });
+  });
+
+  it('should reject appointment and return message', async () => {
+    (service.rejectAppointment as any) = jest
+      .fn()
+      .mockResolvedValue({ id: 'apt', status: 'REJECTED' });
+    const res = await controller.rejectAppointment('apt');
+    expect(service.rejectAppointment).toHaveBeenCalledWith('apt');
+    expect(res).toMatchObject({
+      id: 'apt',
+      message: 'Appointment rejected successfully.',
     });
   });
 });

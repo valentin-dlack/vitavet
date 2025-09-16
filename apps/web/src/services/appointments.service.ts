@@ -83,6 +83,10 @@ class AppointmentsService {
   async completeAppointment(id: string, data: CompleteAppointmentData): Promise<AppointmentResponse> {
     return httpService.patch<AppointmentResponse>(`/appointments/${id}/complete`, data);
   }
+
+  async rejectAppointment(id: string): Promise<AppointmentResponse> {
+    return httpService.patch<AppointmentResponse>(`/appointments/${id}/reject`);
+  }
 }
 
 export const appointmentsService = new AppointmentsService();

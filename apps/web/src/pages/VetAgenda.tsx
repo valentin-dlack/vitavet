@@ -539,6 +539,20 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
     }
   };
 
+  const handleRejectPending = async () => {
+    if (!window.confirm('Confirmer le refus de ce rendez-vous ?')) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await appointmentsService.rejectAppointment(item.id);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to reject appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileUpload = async () => {
     if (!file) return;
     setUploading(true);
@@ -629,9 +643,9 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
                     </button>
                     <button
                       type="button"
-                      className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600 cursor-not-allowed"
-                      title="Refus non disponible pour le moment"
-                      disabled
+                      className="text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                      onClick={handleRejectPending}
+                      disabled={loading}
                     >
                       Refuser
                     </button>

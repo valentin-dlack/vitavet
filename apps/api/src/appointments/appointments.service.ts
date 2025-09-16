@@ -250,6 +250,35 @@ export class AppointmentsService {
     };
   }
 
+  async rejectAppointment(id: string): Promise<AppointmentResponse> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status !== 'PENDING') {
+      throw new ConflictException('Appointment is not pending');
+    }
+
+    appointment.status = 'REJECTED';
+    const saved = await this.appointmentRepository.save(appointment);
+
+    return {
+      id: saved.id,
+      clinicId: saved.clinicId,
+      animalId: saved.animalId ?? undefined,
+      vetUserId: saved.vetUserId ?? undefined,
+      typeId: saved.typeId ?? undefined,
+      status: saved.status,
+      startsAt: saved.startsAt.toISOString(),
+      endsAt: saved.endsAt.toISOString(),
+      createdAt: saved.createdAt.toISOString(),
+    };
+  }
+
   async completeAppointment(
     id: string,
     vetUserId: string,
