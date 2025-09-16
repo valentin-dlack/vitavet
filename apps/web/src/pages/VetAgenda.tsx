@@ -1,4 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type JSX, useCallback } from 'react';
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'En attente',
+  CONFIRMED: 'Confirmé',
+  REJECTED: 'Refusé',
+  CANCELLED: 'Annulé',
+  COMPLETED: 'Terminé',
+  BLOCKED: 'Bloqué',
+  NO_SHOW: 'Absent',
+  REQUESTED: 'Demandé',
+};
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
 import { agendaService, type AgendaItem } from '../services/agenda.service';
 import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
@@ -161,7 +174,7 @@ export function VetAgenda() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {byHour.map(([hour, rows]) => (
               <div key={hour} className="border rounded p-3">
-                <div className="font-medium mb-2">{hour}h</div>
+                <div className="font-medium mb-2">{hour}</div>
                 <div className="space-y-2">
                   {rows.map((r) => (
                     <AgendaRow key={r.id} item={r} onOpenModal={() => setOpenItem(r)} />
@@ -343,7 +356,7 @@ function WeekGrid({ items, anchorDate, setOpenItem }: { items: AgendaItem[]; anc
           if (!isBlocked) {
             if (dayIndex < 0 || dayIndex > 6) return null; // outside current week
             const { start, end } = computeRowSpan(s, e);
-            const content = `${it.animal?.name || 'RDV'} — ${it.status}`;
+            const content = `${it.animal?.name || 'RDV'} — ${statusLabel(it.status)}`;
             const statusClass = it.status === 'COMPLETED'
               ? 'bg-gray-400/80 hover:bg-gray-500'
               : 'bg-blue-500/80 hover:bg-blue-600';
@@ -590,7 +603,7 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
               <div className="border rounded p-3 md:col-span-2">
                 <div className="font-medium mb-1">Rendez-vous</div>
                 <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="text-sm text-gray-700">Statut: {item.status}</div>
+                <div className="text-sm text-gray-700">Statut: {statusLabel(item.status)}</div>
                 <div className="mt-3">
                   <div className="font-medium">Historique de l'animal</div>
                   {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
@@ -600,7 +613,7 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
                       {history.appointments.slice(0, 5).map((apt) => (
                         <li key={apt.id} className="flex items-center justify-between">
                           <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
+                          <span className="text-gray-600">{apt.type?.label || 'RDV'} — {statusLabel(apt.status)}</span>
                         </li>
                       ))}
                       {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
@@ -698,7 +711,7 @@ function AgendaRow({ item, onOpenModal }: { item: AgendaItem; onOpenModal: () =>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
-            {item.status}
+            {statusLabel(item.status)}
           </span>
           <button className="text-blue-600 text-sm hover:underline" onClick={onOpenModal}>Détails</button>
         </div>

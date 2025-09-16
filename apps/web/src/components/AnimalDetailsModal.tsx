@@ -4,6 +4,17 @@ import { animalsService } from '../services/animals.service';
 import { documentsService } from '../services/documents.service';
 import { httpService } from '../services/http.service';
 
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: 'En attente',
+    CONFIRMED: 'Confirmé',
+    REJECTED: 'Refusé',
+    CANCELLED: 'Annulé',
+    COMPLETED: 'Terminé',
+};
+function statusLabel(status: string): string {
+    return STATUS_LABELS[status] ?? status;
+}
+
 interface AnimalDetailsModalProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -151,7 +162,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 								{upcomingAppointments.map((a) => (
 									<li key={a.id} className="flex items-center justify-between">
 										<span>{formatDate(a.startsAt)}</span>
-										<span className="text-gray-600">{a.type?.label || 'RDV'} — {a.status}</span>
+										<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
 									</li>
 								))}
 							</ul>
@@ -168,7 +179,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 									<li key={a.id} className="border-b pb-2 last:border-b-0">
 										<div className="flex items-center justify-between">
 											<span className="text-gray-500">{formatDate(a.startsAt)}</span>
-											<span className="text-gray-600">{a.type?.label || 'RDV'} — {a.status}</span>
+											<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
 										</div>
 										{a.report ? <p className="mt-1">Rapport: {a.report}</p> : null}
 									</li>
