@@ -22,6 +22,12 @@ describe('animalsService', () => {
     expect(httpService.patch).toHaveBeenCalledWith('/animals/an1', { name: 'New', weightKg: 12.3 });
     expect(res).toMatchObject({ id: 'an1', name: 'New' });
   });
+
+  it('deleteAnimal calls DELETE endpoint', async () => {
+    (httpService.delete as any).mockResolvedValue(undefined);
+    await animalsService.deleteAnimal('an1');
+    expect(httpService.delete).toHaveBeenCalledWith('/animals/an1');
+  });
 });
 
 

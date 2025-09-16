@@ -3,10 +3,12 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   UseGuards,
   Body,
+  HttpCode,
 } from '@nestjs/common';
 import { AnimalsService } from './animals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -126,8 +128,6 @@ export class AnimalsController {
     return this.animalsService.findByOwnerAndClinic(user.id, clinicId);
   }
 
-  // US-05a: View animal history
-  // Access: OWNER of the animal, or VET/ASV/ADMIN_CLINIC of the same clinic
   @Get(':animalId/history')
   @ApiOperation({
     summary: "Obtenir l'historique d'un animal",
@@ -219,5 +219,22 @@ export class AnimalsController {
     @Body() dto: UpdateAnimalDto,
   ) {
     return this.animalsService.updateAnimal(user.id, animalId, dto);
+  }
+
+  @ApiOperation({ summary: 'Supprimer un animal' })
+  @ApiParam({ name: 'animalId', description: "ID de l'animal", type: 'string' })
+  @ApiUnauthorizedResponse({ description: 'Token JWT invalide ou manquant' })
+  @ApiForbiddenResponse({
+    description: 'Permissions insuffisantes (OWNER requis)',
+  })
+  @ApiNotFoundResponse({ description: 'Animal non trouvé' })
+  @Roles('OWNER')
+  @Delete(':animalId')
+  @HttpCode(204)
+  async deleteAnimal(
+    @CurrentUser() user: User,
+    @Param('animalId') animalId: string,
+  ) {
+    await this.animalsService.deleteAnimal(user.id, animalId);
   }
 }

@@ -11,6 +11,7 @@ vi.mock('../../services/animals.service', () => ({
   animalsService: {
     getHistory: vi.fn(),
     updateAnimal: vi.fn(),
+    deleteAnimal: vi.fn(),
   },
 }));
 
@@ -145,6 +146,26 @@ describe('AnimalDetailsModal', () => {
     await waitFor(() => {
       expect(mockAnimalsService.updateAnimal).toHaveBeenCalled();
     });
+  });
+
+  it('confirms and deletes the animal', async () => {
+    // Confirm dialog OK
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<AnimalDetailsModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Détails')).toBeInTheDocument();
+    });
+
+    const deleteBtn = screen.getByRole('button', { name: "Supprimer" });
+    fireEvent.click(deleteBtn);
+
+    await waitFor(() => {
+      expect(mockAnimalsService.deleteAnimal).toHaveBeenCalled();
+    });
+
+    confirmSpy.mockRestore();
   });
 
   it('does not render when closed', () => {

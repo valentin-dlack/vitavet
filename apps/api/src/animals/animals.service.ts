@@ -11,6 +11,7 @@ import { UserClinicRole } from '../users/entities/user-clinic-role.entity';
 import { CreateAnimalDto } from './dto/create-animal.dto';
 import { UpdateAnimalDto } from './dto/update-animal.dto';
 import { Clinic } from '../clinics/entities/clinic.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class AnimalsService {
@@ -23,6 +24,7 @@ export class AnimalsService {
     private readonly userClinicRoleRepository: Repository<UserClinicRole>,
     @InjectRepository(Clinic)
     private readonly clinicRepository: Repository<Clinic>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async createAnimal(
@@ -134,5 +136,21 @@ export class AnimalsService {
       }
     }
     return this.animalRepository.save(animal);
+  }
+
+  async deleteAnimal(requesterId: string, animalId: string): Promise<void> {
+    const animal = await this.animalRepository.findOne({
+      where: { id: animalId },
+    });
+    if (!animal) throw new NotFoundException('Animal not found');
+    if (animal.ownerId !== requesterId) {
+      throw new ForbiddenException('Only owner can delete animal');
+    }
+
+    // Use a transaction to ensure consistency if cascade is incomplete
+    await this.dataSource.transaction(async (manager) => {
+      // With onDelete: 'CASCADE' on relations, removing the animal will cascade
+      await manager.remove(animal);
+    });
   }
 }

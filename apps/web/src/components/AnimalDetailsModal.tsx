@@ -52,6 +52,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 	const [isEditing, setIsEditing] = useState(false);
 	const [editError, setEditError] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	interface EditForm {
 		name: string;
 		birthdate: string | '';
@@ -190,6 +191,26 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 							aria-controls="animal-edit-form"
 						>
 							{isEditing ? 'Annuler' : 'Modifier'}
+						</button>
+						<button
+							type="button"
+							className="text-sm px-3 py-1 border rounded text-red-700 border-red-300 hover:bg-red-50 disabled:opacity-50"
+							disabled={deleting}
+							onClick={async () => {
+								if (!window.confirm('Supprimer définitivement cet animal ? Cette action est irréversible.')) return;
+								try {
+									setDeleting(true);
+									await animalsService.deleteAnimal(animal.id);
+									onClose();
+								} catch (e) {
+									setError(e instanceof Error ? e.message : 'Erreur lors de la suppression');
+								} finally {
+									setDeleting(false);
+								}
+							}}
+							aria-label="Supprimer l'animal"
+						>
+							{deleting ? 'Suppression…' : 'Supprimer'}
 						</button>
 						<button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold" aria-label="Fermer">×</button>
 					</div>
