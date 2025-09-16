@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from 'react';
+import '@testing-library/jest-dom';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { VetAgenda } from '../VetAgenda';
 import { agendaService } from '../../services/agenda.service';
@@ -27,6 +29,7 @@ vi.mock('../../services/appointments.service', () => ({
   appointmentsService: {
     completeAppointment: vi.fn(),
     confirmAppointment: vi.fn(),
+    rejectAppointment: vi.fn(),
   }
 }));
 
@@ -171,6 +174,60 @@ describe('VetAgenda', () => {
     await waitFor(() => {
       expect(appointmentsService.confirmAppointment).toHaveBeenCalledWith('apt-pending');
     });
+  });
+
+  it('hides complete button when status is not CONFIRMED', async () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 30).toISOString();
+    (agendaService.getMyDay as any).mockResolvedValue([
+      { id: 'apt-rejected', startsAt: start, endsAt: end, status: 'REJECTED', animal: { name: 'Kitty' } },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Kitty/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Détails'));
+    await waitFor(() => {
+      expect(screen.getByText(/Détails du rendez-vous/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Compléter le RDV' })).not.toBeInTheDocument();
+  });
+
+  it('allows rejecting a pending appointment from the modal', async () => {
+    // Mock confirm dialog
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 30).toISOString();
+    (agendaService.getMyDay as any).mockResolvedValue([
+      { id: 'apt-pending-2', startsAt: start, endsAt: end, status: 'PENDING', animal: { name: 'Moka' }, owner: { firstName: 'O', lastName: 'N', email: 'o@n' } },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Moka/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Détails'));
+    await waitFor(() => {
+      expect(screen.getByText(/Détails du rendez-vous/)).toBeInTheDocument();
+    });
+
+    // Click "Refuser" button
+    fireEvent.click(screen.getByRole('button', { name: 'Refuser' }));
+
+    await waitFor(() => {
+      expect(appointmentsService.rejectAppointment).toHaveBeenCalledWith('apt-pending-2');
+    });
+
+    confirmSpy.mockRestore();
   });
 
   it('shows legend and allows hiding blocks (filters)', async () => {

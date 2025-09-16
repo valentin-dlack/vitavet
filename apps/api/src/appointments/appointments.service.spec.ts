@@ -424,6 +424,49 @@ describe('AppointmentsService', () => {
     });
   });
 
+  describe('rejectAppointment', () => {
+    it('rejects a pending appointment', async () => {
+      const pending: Appointment = {
+        id: 'x',
+        clinicId: 'c',
+        animalId: 'an',
+        vetUserId: 'v',
+        status: 'PENDING',
+        startsAt: new Date('2024-01-10T10:00:00.000Z'),
+        endsAt: new Date('2024-01-10T10:30:00.000Z'),
+        createdByUserId: 'creator',
+        createdAt: new Date('2024-01-09T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-09T12:00:00.000Z'),
+        typeId: null,
+      } as any;
+
+      (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(pending);
+      (appointmentRepo.save as any) = jest
+        .fn()
+        .mockImplementation((a: Appointment) => ({ ...a }));
+
+      const res = await service.rejectAppointment('x');
+      expect(res.status).toBe('REJECTED');
+      expect(appointmentRepo.save).toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when appointment missing', async () => {
+      (appointmentRepo.findOne as any) = jest.fn().mockResolvedValue(null);
+      await expect(service.rejectAppointment('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws ConflictException when status not PENDING', async () => {
+      (appointmentRepo.findOne as any) = jest
+        .fn()
+        .mockResolvedValue({ id: 'z', status: 'CONFIRMED' });
+      await expect(service.rejectAppointment('z')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+
   describe('completeAppointment', () => {
     it('should complete an appointment with notes and report', async () => {
       const appointmentId = 'apt-1';
@@ -494,6 +537,20 @@ describe('AppointmentsService', () => {
         .mockResolvedValue(appointment as any);
       await expect(
         service.completeAppointment('apt-1', 'vet-1', {}),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw ConflictException if appointment is not confirmed', async () => {
+      const appointment = {
+        id: 'apt-2',
+        vetUserId: 'vet-1',
+        status: 'PENDING',
+      };
+      jest
+        .spyOn(appointmentRepo, 'findOne')
+        .mockResolvedValue(appointment as any);
+      await expect(
+        service.completeAppointment('apt-2', 'vet-1', {}),
       ).rejects.toThrow(ConflictException);
     });
   });

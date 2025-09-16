@@ -39,6 +39,13 @@ describe('appointments.service', () => {
     expect(httpService.get).toHaveBeenCalledWith('/appointments/me?status=PENDING');
   });
 
+  it('rejectAppointment calls backend endpoint', async () => {
+    (httpService.patch as any).mockResolvedValue({ id: 'a1', status: 'REJECTED' });
+    const res = await appointmentsService.rejectAppointment('a1');
+    expect(httpService.patch).toHaveBeenCalledWith('/appointments/a1/reject');
+    expect(res.status).toBe('REJECTED');
+  });
+
   it('getPendingAppointments constructs params', async () => {
     (httpService.get as any).mockResolvedValue({ appointments: [], total: 0 });
     await appointmentsService.getPendingAppointments('c1', 10, 5);
