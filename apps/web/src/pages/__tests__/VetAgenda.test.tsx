@@ -26,6 +26,7 @@ vi.mock('../../services/clinics.service', () => ({
 vi.mock('../../services/appointments.service', () => ({
   appointmentsService: {
     completeAppointment: vi.fn(),
+    confirmAppointment: vi.fn(),
   }
 }));
 
@@ -142,6 +143,33 @@ describe('VetAgenda', () => {
         notes: 'Test notes',
         report: 'Test report',
       });
+    });
+  });
+
+  it('allows confirming a pending appointment from the modal', async () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 0).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 30).toISOString();
+    (agendaService.getMyDay as any).mockResolvedValue([
+      { id: 'apt-pending', startsAt: start, endsAt: end, status: 'PENDING', animal: { name: 'Lucky' }, owner: { firstName: 'O', lastName: 'N', email: 'o@n' } },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Lucky/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Détails'));
+    await waitFor(() => {
+      expect(screen.getByText(/Détails du rendez-vous/)).toBeInTheDocument();
+    });
+
+    // Click "Valider" button
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+
+    await waitFor(() => {
+      expect(appointmentsService.confirmAppointment).toHaveBeenCalledWith('apt-pending');
     });
   });
 

@@ -23,6 +23,16 @@ const cards = [
 		),
 	},
 	{
+		key: 'VET_ANIMALS',
+		roles: ['VET'],
+		to: '/vet/animals',
+		title: 'Mes patients',
+		desc: 'Liste des animaux suivis et leurs historiques',
+		icon: (
+			<span className="text-3xl" aria-hidden>🐾</span>
+		),
+	},
+	{
 		key: 'VET_REMINDERS',
 		roles: ['VET', 'ADMIN_CLINIC'],
 		to: '/vet/reminders',

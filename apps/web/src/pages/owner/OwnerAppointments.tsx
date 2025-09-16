@@ -1,4 +1,14 @@
 import { useEffect, useState } from 'react';
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'En attente',
+  CONFIRMED: 'Confirmé',
+  REJECTED: 'Refusé',
+  CANCELLED: 'Annulé',
+  COMPLETED: 'Terminé',
+};
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
 import { appointmentsService, type AppointmentResponse } from '../../services/appointments.service';
 
 export function OwnerAppointments() {
@@ -34,11 +44,11 @@ export function OwnerAppointments() {
             <label className="block text-sm text-gray-700">Filtrer par statut</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as AppointmentResponse['status'])} className="mt-1 border rounded p-2">
               <option value="">Tous</option>
-              <option value="PENDING">PENDING</option>
-              <option value="CONFIRMED">CONFIRMED</option>
-              <option value="REJECTED">REJECTED</option>
-              <option value="CANCELLED">CANCELLED</option>
-              <option value="COMPLETED">COMPLETED</option>
+              <option value="PENDING">{statusLabel('PENDING')}</option>
+              <option value="CONFIRMED">{statusLabel('CONFIRMED')}</option>
+              <option value="REJECTED">{statusLabel('REJECTED')}</option>
+              <option value="CANCELLED">{statusLabel('CANCELLED')}</option>
+              <option value="COMPLETED">{statusLabel('COMPLETED')}</option>
             </select>
           </div>
           <button type="button" className="px-3 py-2 border rounded" onClick={load} disabled={loading}>Rafraîchir</button>
@@ -57,7 +67,7 @@ export function OwnerAppointments() {
                     <div className="font-medium">{s.toLocaleDateString()} {s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {e.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     <div className="text-sm text-gray-600">Vétérinaire: {a.vet ? `${a.vet.firstName} ${a.vet.lastName}` : '—'}</div>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">{a.status}</span>
+                  <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">{statusLabel(a.status)}</span>
                 </div>
               </div>
             );

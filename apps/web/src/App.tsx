@@ -15,6 +15,7 @@ import { VetAgenda } from './pages/VetAgenda';
 import { OwnerAppointments } from './pages/owner/OwnerAppointments';
 import { OwnerAnimals } from './pages/owner/OwnerAnimals';
 import { VetReminders } from './pages/vet/VetReminders';
+import { VetAnimals } from './pages/vet/VetAnimals';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminClinics } from './pages/admin/AdminClinics';
 import { AdminCreateClinic } from './pages/admin/AdminCreateClinic';
@@ -156,6 +157,11 @@ function App() {
             <Route path="/vet/reminders" element={
               <ProtectedRoute anyOfRoles={['VET', 'ADMIN_CLINIC']}>
                 <VetReminders />
+              </ProtectedRoute>
+            } />
+            <Route path="/vet/animals" element={
+              <ProtectedRoute requiredRole="VET">
+                <VetAnimals />
               </ProtectedRoute>
             } />
             <Route path="/admin/users" element={

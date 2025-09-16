@@ -1,4 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type JSX, useCallback } from 'react';
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'En attente',
+  CONFIRMED: 'Confirmé',
+  REJECTED: 'Refusé',
+  CANCELLED: 'Annulé',
+  COMPLETED: 'Terminé',
+  BLOCKED: 'Bloqué',
+  NO_SHOW: 'Absent',
+  REQUESTED: 'Demandé',
+};
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
 import { agendaService, type AgendaItem } from '../services/agenda.service';
 import { animalsService, type AnimalHistoryDto } from '../services/animals.service';
 import { clinicsService } from '../services/clinics.service';
@@ -161,7 +174,7 @@ export function VetAgenda() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {byHour.map(([hour, rows]) => (
               <div key={hour} className="border rounded p-3">
-                <div className="font-medium mb-2">{hour}h</div>
+                <div className="font-medium mb-2">{hour}</div>
                 <div className="space-y-2">
                   {rows.map((r) => (
                     <AgendaRow key={r.id} item={r} onOpenModal={() => setOpenItem(r)} />
@@ -343,7 +356,7 @@ function WeekGrid({ items, anchorDate, setOpenItem }: { items: AgendaItem[]; anc
           if (!isBlocked) {
             if (dayIndex < 0 || dayIndex > 6) return null; // outside current week
             const { start, end } = computeRowSpan(s, e);
-            const content = `${it.animal?.name || 'RDV'} — ${it.status}`;
+            const content = `${it.animal?.name || 'RDV'} — ${statusLabel(it.status)}`;
             const statusClass = it.status === 'COMPLETED'
               ? 'bg-gray-400/80 hover:bg-gray-500'
               : 'bg-blue-500/80 hover:bg-blue-600';
@@ -473,6 +486,7 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
   const [documents, setDocuments] = useState<Document[]>([]);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [completionForm, setCompletionForm] = useState<CompleteAppointmentData>({
     notes: '',
     report: '',
@@ -507,6 +521,19 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
       onClose(); // This should trigger a refresh in the parent component
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to complete appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmPending = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await appointmentsService.confirmAppointment(item.id);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to confirm appointment');
     } finally {
       setLoading(false);
     }
@@ -590,17 +617,87 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
               <div className="border rounded p-3 md:col-span-2">
                 <div className="font-medium mb-1">Rendez-vous</div>
                 <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="text-sm text-gray-700">Statut: {item.status}</div>
+                <div className="text-sm text-gray-700 flex items-center gap-2">Statut: {statusLabel(item.status)} {item.status === 'PENDING' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="ml-2 text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                      onClick={handleConfirmPending}
+                      disabled={loading}
+                    >
+                      Valider
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-600 cursor-not-allowed"
+                      title="Refus non disponible pour le moment"
+                      disabled
+                    >
+                      Refuser
+                    </button>
+                  </>
+                ) : null}</div>
+                {history ? (
+                  (() => {
+                    const current = history.appointments.find((a) => a.id === item.id);
+                    if (!current) return null;
+                    return (
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {current.notes ? (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <div className="text-sm font-medium text-yellow-800">Notes internes</div>
+                            <p className="text-sm text-yellow-900 whitespace-pre-wrap">{current.notes}</p>
+                          </div>
+                        ) : null}
+                        {current.report ? (
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <div className="text-sm font-medium text-green-800">Compte-rendu</div>
+                            <p className="text-sm text-green-900 whitespace-pre-wrap">{current.report}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                ) : null}
                 <div className="mt-3">
                   <div className="font-medium">Historique de l'animal</div>
                   {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
                   {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
                   {history && (
-                    <ul className="mt-2 space-y-1 text-sm">
+                    <ul className="mt-2 space-y-2 text-sm">
                       {history.appointments.slice(0, 5).map((apt) => (
-                        <li key={apt.id} className="flex items-center justify-between">
-                          <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span className="text-gray-600">{apt.type?.label || 'RDV'} — {apt.status}</span>
+                        <li key={apt.id}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">{apt.type?.label || 'RDV'} — {statusLabel(apt.status)}</span>
+                              <button
+                                type="button"
+                                disabled={!apt.notes && !apt.report}
+                                aria-disabled={!apt.notes && !apt.report}
+                                className={`text-xs px-2 py-1 rounded border ${(!apt.notes && !apt.report) ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-200' : 'hover:bg-gray-50'}`}
+                                onClick={() => setExpanded((prev) => ({ ...prev, [apt.id]: !prev[apt.id] }))}
+                              >
+                                {expanded[apt.id] ? 'Masquer' : 'Détails'}
+                              </button>
+                            </div>
+                          </div>
+                          {expanded[apt.id] ? (
+                            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {apt.notes ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                                  <div className="text-xs font-medium text-yellow-800">Notes internes</div>
+                                  <p className="text-sm text-yellow-900 whitespace-pre-wrap">{apt.notes}</p>
+                                </div>
+                              ) : null}
+                              {apt.report ? (
+                                <div className="bg-green-50 border border-green-200 rounded p-2">
+                                  <div className="text-xs font-medium text-green-800">Compte-rendu</div>
+                                  <p className="text-sm text-green-900 whitespace-pre-wrap">{apt.report}</p>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </li>
                       ))}
                       {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
@@ -698,7 +795,7 @@ function AgendaRow({ item, onOpenModal }: { item: AgendaItem; onOpenModal: () =>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-1 rounded ${item.status === 'COMPLETED' ? 'bg-gray-200 text-gray-800' : item.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
-            {item.status}
+            {statusLabel(item.status)}
           </span>
           <button className="text-blue-600 text-sm hover:underline" onClick={onOpenModal}>Détails</button>
         </div>
