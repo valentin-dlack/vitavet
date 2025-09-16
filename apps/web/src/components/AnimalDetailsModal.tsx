@@ -19,6 +19,7 @@ interface AnimalDetailsModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	animal: AnimalDto | null;
+	onDeleted?: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -44,7 +45,7 @@ function computeAge(birthdate?: string | null): string | null {
 	return months > 0 ? `${years} ans ${months} mois` : `${years} ans`;
 }
 
-export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsModalProps) {
+export function AnimalDetailsModal({ isOpen, onClose, animal, onDeleted }: AnimalDetailsModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
@@ -201,6 +202,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 								try {
 									setDeleting(true);
 									await animalsService.deleteAnimal(animal.id);
+									onDeleted?.();
 									onClose();
 								} catch (e) {
 									setError(e instanceof Error ? e.message : 'Erreur lors de la suppression');

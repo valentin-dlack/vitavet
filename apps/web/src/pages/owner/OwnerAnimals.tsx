@@ -107,6 +107,10 @@ export function OwnerAnimals() {
           isOpen={selectedAnimal != null}
           onClose={() => setSelectedAnimal(null)}
           animal={selectedAnimal}
+          onDeleted={() => {
+            setSelectedAnimal(null);
+            loadAnimals();
+          }}
         />
       </div>
     </div>
