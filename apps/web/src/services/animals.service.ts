@@ -70,8 +70,14 @@ class AnimalsService {
     return httpService.get<AnimalHistoryDto>(`/animals/${encodeURIComponent(animalId)}/history`);
   }
 
-  async updateAnimal(animalId: string, dto: Partial<Omit<AnimalDto, 'id' | 'ownerId' | 'clinicId'>>): Promise<AnimalDto> {
-    return httpService.patch<AnimalDto>(`/animals/${encodeURIComponent(animalId)}`, dto as any);
+  async updateAnimal(
+    animalId: string,
+    dto: Partial<Omit<AnimalDto, 'id' | 'ownerId' | 'clinicId'>>
+  ): Promise<AnimalDto> {
+    return httpService.patch<AnimalDto>(
+      `/animals/${encodeURIComponent(animalId)}`,
+      dto
+    );
   }
 }
 
