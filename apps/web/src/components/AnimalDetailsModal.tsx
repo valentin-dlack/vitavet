@@ -139,7 +139,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 		if (!history) return [] as NonNullable<AnimalHistoryDto>['appointments'];
 		const now = Date.now();
 		return history.appointments
-			.filter((a) => new Date(a.startsAt).getTime() >= now && a.status !== 'CANCELLED')
+			.filter((a) => new Date(a.startsAt).getTime() > now && a.status === 'CONFIRMED')
 			.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
 			.slice(0, 3);
 	}, [history]);
