@@ -26,7 +26,7 @@ export class ReminderInstance {
   @Column('uuid', { name: 'appointment_id', nullable: true })
   appointmentId?: string | null;
 
-  @ManyToOne(() => Appointment, { nullable: true })
+  @ManyToOne(() => Appointment, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'appointment_id' })
   appointment?: Appointment;
 
