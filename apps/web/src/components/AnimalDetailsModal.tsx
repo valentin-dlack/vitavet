@@ -49,6 +49,7 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 	const [error, setError] = useState<string | null>(null);
 	const [history, setHistory] = useState<AnimalHistoryDto | null>(null);
 	const [documents, setDocuments] = useState<Record<string, { id: string; filename: string }[]>>({});
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
 	useEffect(() => {
 		let isCancelled = false;
@@ -160,9 +161,46 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 						) : (
 							<ul className="text-sm space-y-2">
 								{upcomingAppointments.map((a) => (
-									<li key={a.id} className="flex items-center justify-between">
-										<span>{formatDate(a.startsAt)}</span>
-										<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
+									<li key={a.id} className="">
+										<div className="flex items-center justify-between gap-3">
+											<span>{formatDate(a.startsAt)}</span>
+											<div className="flex items-center gap-2">
+												<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
+												<button
+													type="button"
+													className="text-xs px-2 py-1 rounded border hover:bg-gray-50"
+													onClick={() => setExpanded((prev) => ({ ...prev, [a.id]: !prev[a.id] }))}
+												>
+													{expanded[a.id] ? 'Masquer' : 'Détails'}
+												</button>
+											</div>
+										</div>
+										{expanded[a.id] ? (
+											<div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+												{a.notes ? (
+													<div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+														<div className="text-xs font-medium text-yellow-800">Notes internes</div>
+														<p className="text-sm text-yellow-900 whitespace-pre-wrap">{a.notes}</p>
+													</div>
+												) : null}
+												{a.report ? (
+													<div className="bg-green-50 border border-green-200 rounded p-2">
+														<div className="text-xs font-medium text-green-800">Compte-rendu</div>
+														<p className="text-sm text-green-900 whitespace-pre-wrap">{a.report}</p>
+													</div>
+												) : null}
+												{documents[a.id] && documents[a.id].length > 0 ? (
+													<div className="bg-gray-50 border border-gray-200 rounded p-2 md:col-span-2">
+														<div className="text-xs font-medium text-gray-700">Documents</div>
+														<ul className="mt-1 text-sm list-disc pl-5">
+															{documents[a.id].map((doc) => (
+																<li key={doc.id}>📄 {doc.filename}</li>
+															))}
+														</ul>
+													</div>
+												) : null}
+											</div>
+										) : null}
 									</li>
 								))}
 							</ul>
@@ -177,11 +215,45 @@ export function AnimalDetailsModal({ isOpen, onClose, animal }: AnimalDetailsMod
 							<ul className="text-sm space-y-3">
 								{recentReports.map((a) => (
 									<li key={a.id} className="border-b pb-2 last:border-b-0">
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between gap-3">
 											<span className="text-gray-500">{formatDate(a.startsAt)}</span>
-											<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
+											<div className="flex items-center gap-2">
+												<span className="text-gray-600">{a.type?.label || 'RDV'} — {statusLabel(a.status)}</span>
+												<button
+													type="button"
+													className="text-xs px-2 py-1 rounded border hover:bg-gray-50"
+													onClick={() => setExpanded((prev) => ({ ...prev, [a.id]: !prev[a.id] }))}
+												>
+													{expanded[a.id] ? 'Masquer' : 'Détails'}
+												</button>
+											</div>
 										</div>
-										{a.report ? <p className="mt-1">Rapport: {a.report}</p> : null}
+										{expanded[a.id] ? (
+											<div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+												{a.notes ? (
+													<div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+														<div className="text-xs font-medium text-yellow-800">Notes internes</div>
+														<p className="text-sm text-yellow-900 whitespace-pre-wrap">{a.notes}</p>
+													</div>
+												) : null}
+												{a.report ? (
+													<div className="bg-green-50 border border-green-200 rounded p-2">
+														<div className="text-xs font-medium text-green-800">Compte-rendu</div>
+														<p className="text-sm text-green-900 whitespace-pre-wrap">{a.report}</p>
+													</div>
+												) : null}
+												{documents[a.id] && documents[a.id].length > 0 ? (
+													<div className="bg-gray-50 border border-gray-200 rounded p-2 md:col-span-2">
+														<div className="text-xs font-medium text-gray-700">Documents</div>
+														<ul className="mt-1 text-sm list-disc pl-5">
+															{documents[a.id].map((doc) => (
+																<li key={doc.id}>📄 {doc.filename}</li>
+															))}
+														</ul>
+													</div>
+												) : null}
+											</div>
+										) : null}
 									</li>
 								))}
 							</ul>

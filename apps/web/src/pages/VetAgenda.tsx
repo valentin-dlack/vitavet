@@ -486,6 +486,7 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
   const [documents, setDocuments] = useState<Document[]>([]);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [completionForm, setCompletionForm] = useState<CompleteAppointmentData>({
     notes: '',
     report: '',
@@ -604,16 +605,67 @@ function AgendaItemModal({ item, onClose }: { item: AgendaItem; onClose: () => v
                 <div className="font-medium mb-1">Rendez-vous</div>
                 <div className="text-sm text-gray-700">Heure: {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                 <div className="text-sm text-gray-700">Statut: {statusLabel(item.status)}</div>
+                {history ? (
+                  (() => {
+                    const current = history.appointments.find((a) => a.id === item.id);
+                    if (!current) return null;
+                    return (
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {current.notes ? (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <div className="text-sm font-medium text-yellow-800">Notes internes</div>
+                            <p className="text-sm text-yellow-900 whitespace-pre-wrap">{current.notes}</p>
+                          </div>
+                        ) : null}
+                        {current.report ? (
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <div className="text-sm font-medium text-green-800">Compte-rendu</div>
+                            <p className="text-sm text-green-900 whitespace-pre-wrap">{current.report}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                ) : null}
                 <div className="mt-3">
                   <div className="font-medium">Historique de l'animal</div>
                   {loading ? <div className="text-sm text-gray-500">Chargement…</div> : null}
                   {error ? <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div> : null}
                   {history && (
-                    <ul className="mt-2 space-y-1 text-sm">
+                    <ul className="mt-2 space-y-2 text-sm">
                       {history.appointments.slice(0, 5).map((apt) => (
-                        <li key={apt.id} className="flex items-center justify-between">
-                          <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span className="text-gray-600">{apt.type?.label || 'RDV'} — {statusLabel(apt.status)}</span>
+                        <li key={apt.id}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{new Date(apt.startsAt).toLocaleDateString()} {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">{apt.type?.label || 'RDV'} — {statusLabel(apt.status)}</span>
+                              <button
+                                type="button"
+                                disabled={!apt.notes && !apt.report}
+                                aria-disabled={!apt.notes && !apt.report}
+                                className={`text-xs px-2 py-1 rounded border ${(!apt.notes && !apt.report) ? 'opacity-50 cursor-not-allowed text-gray-400 border-gray-200' : 'hover:bg-gray-50'}`}
+                                onClick={() => setExpanded((prev) => ({ ...prev, [apt.id]: !prev[apt.id] }))}
+                              >
+                                {expanded[apt.id] ? 'Masquer' : 'Détails'}
+                              </button>
+                            </div>
+                          </div>
+                          {expanded[apt.id] ? (
+                            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {apt.notes ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                                  <div className="text-xs font-medium text-yellow-800">Notes internes</div>
+                                  <p className="text-sm text-yellow-900 whitespace-pre-wrap">{apt.notes}</p>
+                                </div>
+                              ) : null}
+                              {apt.report ? (
+                                <div className="bg-green-50 border border-green-200 rounded p-2">
+                                  <div className="text-xs font-medium text-green-800">Compte-rendu</div>
+                                  <p className="text-sm text-green-900 whitespace-pre-wrap">{apt.report}</p>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </li>
                       ))}
                       {history.appointments.length === 0 ? <li className="text-gray-600">Aucun historique</li> : null}
